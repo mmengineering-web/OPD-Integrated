@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/ui-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
+import { Breadcrumb } from "@/components/opd/breadcrumb";
 import { PROJECTS } from "@/lib/opd/config.js";
 import { buildPortalModel, unreachableProjects, topRole, ROLE_LABEL } from "@/lib/opd/auth-core.js";
 import { loadAccess, legacyExplo, logoutAll } from "@/lib/opd/session.js";
@@ -39,7 +40,7 @@ export function PortalHome() {
     if (a?.ok) { setAccess(a); return; }
     // Phones that were signed in to the standalone Exploration app (or use guest mode) keep working: go straight there.
     if (legacyExplo()) { location.replace("/explo/"); return; }
-    location.replace("/login/?next=/");
+    location.replace("/login/?next=/portal/");
   }, []);
 
   const model = useMemo(() => (access ? buildPortalModel(PROJECTS, access) : null), [access]);
@@ -47,18 +48,19 @@ export function PortalHome() {
 
   const down = unreachableProjects(access).map((id: string) => PROJECTS.find(p => p.id === id)?.name ?? id);
   const role = topRole(access);
-  const out = async () => { await logoutAll(); location.replace("/login/"); };
+  const out = async () => { await logoutAll(); location.replace("/"); };
 
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-[20] flex h-[var(--topbar-h)] items-center gap-3 border-b bg-[color-mix(in_srgb,var(--card)_92%,transparent)] px-4 backdrop-blur">
-        <BrandMark className="size-8" />
-        <div className="min-w-0 flex-1 text-sm leading-tight"><div className="font-semibold">One Portal Data</div>
+        <a href="/" aria-label="One Portal Data, home"><BrandMark className="size-8" /></a>
+        <div className="min-w-0 flex-1 text-sm leading-tight"><div className="font-serif text-base font-medium">One Portal Data</div>
           <div className="truncate text-xs text-muted-foreground" id="who">{access.name} · {role ? ROLE_LABEL[role as keyof typeof ROLE_LABEL] : "no role"}</div></div>
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">{theme === "dark" ? <Sun /> : <Moon />}</Button>
         <Button variant="outline" size="sm" onClick={out} id="b-out"><LogOut />Sign out</Button>
       </header>
-      <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-10 pt-5">
+      <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-10 pt-4">
+        <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/" }, { label: "Portal" }]} />
         {down.length > 0 && (
           <div role="status" id="down-banner" className="mb-4 flex items-start gap-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-sm text-warning">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />

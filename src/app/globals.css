@@ -175,6 +175,7 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-serif-src), Georgia, "Times New Roman", serif;
 }
 
 @layer base {
@@ -296,3 +297,60 @@ label:has(:required) > .lbl::before { content: ""; display: inline-block; width:
 .mapx .sw{display:inline-block;width:1rem;height:1rem;border-radius:3px;flex:none}
 .mapx .mp table td{padding:0 .5rem 0 0}.mapx .mp-r.muted{color:var(--muted-foreground)}
 #map{min-height:70vh;border-radius:var(--radius-xl);overflow:hidden;position:relative}
+
+/* ==========================================================================
+   Landing page (/): public home with hero, module cards, sites, how it works.
+   Warm gradient + faint grid in the hero; serif headings; strata colours only (no violet).
+   ========================================================================== */
+.land-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:center;min-height:100dvh;padding:calc(var(--safe-t) + 8rem) var(--sp-5) 0;
+  background:
+    radial-gradient(55% 60% at 6% 72%,color-mix(in srgb,var(--strata-5) 80%,transparent),transparent 70%),
+    radial-gradient(50% 55% at 96% 58%,color-mix(in srgb,#f2e0b6 75%,transparent),transparent 70%),
+    var(--page)}
+[data-theme="dark"] .land-hero{background:
+    radial-gradient(55% 60% at 6% 72%,color-mix(in srgb,var(--strata-5) 42%,transparent),transparent 70%),
+    radial-gradient(50% 55% at 96% 58%,color-mix(in srgb,#6b5320 38%,transparent),transparent 70%),
+    var(--page)}
+.land-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(to right,color-mix(in srgb,var(--foreground) 7%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--foreground) 7%,transparent) 1px,transparent 1px);
+  background-size:4.5rem 4.5rem;background-position:center top;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0,transparent 85%);mask-image:linear-gradient(to bottom,#000 0,transparent 85%)}
+.land-copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;max-width:44rem;text-align:center}
+.land-copy h1{margin:0;font-family:var(--font-serif);font-weight:450;font-size:clamp(2.5rem,1.5rem + 4.4vw,4.5rem);line-height:1.04;letter-spacing:-.025em;text-wrap:balance}
+.land-copy p{margin:var(--sp-5) 0 var(--sp-8);max-width:34rem;font-size:1.0625rem;line-height:1.55;color:var(--muted-foreground);text-wrap:pretty}
+
+.land-chip{position:absolute;z-index:2;display:grid;place-items:center;width:3.25rem;height:3.25rem;border-radius:var(--radius-full);color:var(--primary-foreground);background:var(--primary);box-shadow:0 0 0 .5rem var(--card),var(--shadow-md)}
+.land-chip-a{right:max(6%,calc(50% - 26rem));top:30%}
+.land-chip-b{left:max(8%,calc(50% - 30rem));top:46%;background:var(--strata-4);color:var(--strata-1)}
+@media (max-width:719px){.land-chip{display:none}}
+
+.land-fan{position:absolute;left:50%;bottom:0;z-index:1;width:0;height:16rem;animation:m-rise var(--dur-4) var(--ease-out) .35s both}
+.land-mound{position:absolute;left:1.25rem;bottom:calc(100% - 1px);width:6rem;height:3rem;z-index:-1}
+.land-card{position:absolute;bottom:-2rem;left:0;display:flex;flex-direction:column;align-items:center;gap:var(--sp-3);width:17rem;min-height:14rem;padding:var(--sp-6) var(--sp-5) var(--sp-4);text-align:center;text-decoration:none;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:1.25rem;box-shadow:inset 0 1px 0 var(--surface-hi),var(--shadow-md);transition:transform var(--dur-3) var(--ease-out),box-shadow var(--dur-3) var(--ease-out)}
+.land-card-t{font-family:var(--font-serif);font-size:1.25rem;font-weight:450;line-height:1.2;letter-spacing:-.005em;text-wrap:balance}
+.land-card-m{display:inline-flex;align-items:center;gap:.4rem;margin-top:auto;font-size:.75rem;color:var(--muted-foreground)}
+.land-card-m i{width:.3rem;height:.3rem;border-radius:var(--radius-full);background:var(--primary)}
+.land-card-c{background:color-mix(in srgb,var(--accent) 70%,var(--card));z-index:2;transform:translateX(-50%);bottom:1.5rem;min-height:12.5rem}
+.land-card-l{transform:translateX(-138%) rotate(-5deg);transform-origin:bottom right}
+.land-card-r{transform:translateX(38%) rotate(5deg);transform-origin:bottom left;opacity:.95}
+a.land-card-c:hover{transform:translateX(-50%) translateY(-2px);box-shadow:inset 0 1px 0 var(--surface-hi),var(--shadow-lg)}
+a.land-card-l:hover{transform:translateX(-138%) translateY(-2px) rotate(-5deg);box-shadow:inset 0 1px 0 var(--surface-hi),var(--shadow-lg)}
+@media (max-width:719px){.land-card{width:14rem;bottom:-1rem}.land-card-c{bottom:1rem}.land-card-l{transform:translateX(-128%) rotate(-5deg)}a.land-card-l:hover{transform:translateX(-128%) translateY(-2px) rotate(-5deg)}.land-card-r{transform:translateX(28%) rotate(5deg)}}
+
+.land-ico{display:grid;place-items:center;width:2.25rem;height:2.25rem;flex:none;border-radius:var(--radius-full);color:var(--accent-brand);background:var(--accent);box-shadow:inset 0 0 0 1px var(--border)}
+.land-ico-on{color:var(--primary-foreground);background:var(--primary);box-shadow:none}
+
+.land-sec{padding:5.5rem 0}
+.land-sec-alt{background:var(--card);border-block:1px solid var(--border)}
+.land-wrap{width:100%;max-width:72rem;margin-inline:auto;padding-inline:var(--sp-5)}
+.land-sec h2{margin:0 0 var(--sp-8);font-family:var(--font-serif);font-weight:450;font-size:clamp(1.75rem,1.2rem + 2vw,2.5rem);line-height:1.1;letter-spacing:-.02em}
+.land-mod{display:flex;flex-direction:column;gap:var(--sp-3);min-height:15rem;padding:var(--sp-6);text-decoration:none;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:1.25rem;box-shadow:var(--shadow-xs);transition:transform var(--dur-3) var(--ease-out),box-shadow var(--dur-3) var(--ease-out)}
+.land-sec-alt .land-mod{background:var(--page)}
+a.land-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.land-mod-off{background:var(--muted);color:var(--muted-foreground)}
+.land-mod-off h3{color:var(--foreground)}
+.land-state{padding:.15rem .6rem;font-size:.75rem;font-weight:500;color:var(--muted-foreground);background:var(--secondary);border:1px solid var(--border);border-radius:var(--radius-full)}
+.land-state-on{color:var(--success);background:var(--success-bg);border-color:var(--success-border)}
+.land-site{display:flex;flex-direction:column;gap:.25rem;padding:var(--sp-4);background:var(--page);border:1px solid var(--border);border-radius:1rem}
+.land-step{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-2) 0}
+@media (prefers-reduced-motion:reduce){.land-fan{animation:none}}

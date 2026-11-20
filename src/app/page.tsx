@@ -1,5 +1,5 @@
-import { PortalHome } from "@/components/opd/portal-home";
+import { Landing } from "@/components/opd/landing";
 
 export default function Page() {
-  return <PortalHome />;
+  return <Landing />;
 }

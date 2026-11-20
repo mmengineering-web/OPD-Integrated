@@ -21,3 +21,10 @@ Tests
 Known limits
 - A password that differs in one project looks like "no account" there (module greyed).
 - Roles shown on the portal come from the profile tables; the database RLS still decides what is allowed.
+
+## Home page and routes (v1.6)
+- `/` is now the public home: hero, Log in / Get started, module cards, sites, how it works. It never forces a login. Phones with the old standalone Exploration login (or guest mode) still go straight to `/explo/`.
+- `/portal/` is the signed-in module and site tiles (the old `/`). Signed out, it redirects to `/login/?next=/portal/`. Sign-out now lands on `/`.
+- `/login/` returns to `/portal/` by default. Breadcrumbs: Home > Log in, Home > Portal.
+- Headings use Newsreader (OFL, `src/fonts/newsreader.LICENSE`), body stays Geist.
+- Get started scrolls to "How it works" because accounts are created by a super admin; Log in and Start here go to `/login/`.

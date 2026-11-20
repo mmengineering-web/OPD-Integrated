@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
+import { Breadcrumb } from "@/components/opd/breadcrumb";
 import { safeNext } from "@/lib/opd/auth-core.js";
 import { loadAccess, loginAll } from "@/lib/opd/session.js";
 
@@ -18,7 +19,7 @@ export function OpdLogin() {
   const [svg, setSvg] = useState("");
   const hero = useRef<HTMLDivElement>(null);
   const { theme, toggle } = useTheme();
-  const nextPath = () => safeNext(new URLSearchParams(location.search).get("next"), "/");
+  const nextPath = () => safeNext(new URLSearchParams(location.search).get("next"), "/portal/");
 
   useEffect(() => {
     if (loadAccess()?.ok) { location.replace(nextPath()); return; }
@@ -51,6 +52,7 @@ export function OpdLogin() {
   return (
     <div className="login-wrap">
       <div className="login-hero" ref={hero}>
+        <Breadcrumb tone="light" className="absolute left-4 top-[calc(var(--safe-t)+1rem)] z-[2]" items={[{ label: "Home", href: "/" }, { label: "Log in" }]} />
         <div dangerouslySetInnerHTML={{ __html: svg }} />
         <div className="hero-copy">
           <h2 style={{ ["--i" as string]: 0 }}>One login for every site and module.</h2>

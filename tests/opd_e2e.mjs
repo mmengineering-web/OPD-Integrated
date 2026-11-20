@@ -26,10 +26,19 @@ const page = await ctx.newPage();
 const errs = [];
 page.on("pageerror", e => errs.push(e.message));
 
-// 1. no access -> login with next
+// 0. public home: hero, Log in and Get started, no forced redirect
 await page.goto(B + "/");
+await page.waitForSelector("h1");
+ok(/one login/i.test(await page.textContent("h1")), "home shows the hero without signing in");
+ok((await page.locator('#n-login').getAttribute("href")) === "/login/", "Log in goes to /login/");
+ok((await page.locator('header a:has-text("Get started")').count()) === 1, "Get started button is in the header");
+ok(page.url() === B + "/", "home does not redirect when signed out");
+
+// 1. portal without access -> login with next
+await page.goto(B + "/portal/");
 await page.waitForURL(/\/login\//);
-ok(/next=%2F|next=\//.test(page.url()), "home without access redirects to /login/?next=/");
+ok(/next=%2Fportal%2F|next=\/portal\//.test(page.url()), "portal without access redirects to /login/?next=/portal/");
+ok((await page.locator('nav[aria-label="Breadcrumb"]').textContent()).includes("Home"), "login shows a Home breadcrumb");
 
 // 2. wrong password
 await page.fill("#l-email", "geo@can.test"); await page.fill("#l-pw", "bad"); await page.click("#l-go");
@@ -39,8 +48,8 @@ ok(/wrong|no account/i.test(await page.textContent("#l-msg")), "wrong password s
 // 3. good login (the stub accepts the password "good"), hostile next is ignored
 await page.goto(B + "/login/?next=//evil.com");
 await page.fill("#l-email", "geo@can.test"); await page.fill("#l-pw", "good"); await page.click("#l-go");
-await page.waitForURL(B + "/");
-ok(true, "open-redirect next is ignored, lands on portal home");
+await page.waitForURL(B + "/portal/");
+ok(true, "open-redirect next is ignored, lands on the portal");
 await page.waitForSelector("#who");
 ok((await page.textContent("#who")).includes("geo@can.test") || (await page.textContent("#who")).length > 3, "home shows who is signed in");
 const wkm = await page.locator('[data-module="wkm-explo"]').first();
@@ -58,10 +67,17 @@ await page.waitForURL(/\/explo\/\?site=WKM/);
 await page.waitForSelector("#l-site");
 ok((await page.inputValue("#l-site")) === "WKM", "exploration login preselects the site from ?site=");
 
-// 5. sign out of the portal
+// 4b. signed in: home offers the portal; portal breadcrumb leads home
 await page.goto(B + "/");
+await page.waitForSelector("#who-home");
+ok((await page.locator('header a:has-text("Open portal")').count()) === 1, "signed in: home header shows Open portal");
+await page.goto(B + "/portal/");
+await page.waitForSelector('nav[aria-label="Breadcrumb"]');
+ok((await page.locator('nav[aria-label="Breadcrumb"] [aria-current="page"]').textContent()) === "Portal", "portal breadcrumb marks the current page");
+
+// 5. sign out of the portal (lands on the public home)
 await page.waitForSelector("#b-out"); await page.click("#b-out");
-await page.waitForURL(/\/login\//);
+await page.waitForURL(B + "/");
 ok(await page.evaluate(() => !localStorage.getItem("opd_access") && !localStorage.getItem("fake-sb-exp-WKM")), "sign out clears the access object and every project session");
 
 // 6. legacy standalone session goes straight to Exploration
@@ -76,7 +92,7 @@ await page.goto(B + "/login/"); await page.goto(B + "/explo/");
 await page.evaluate(() => navigator.serviceWorker.ready.then(() => 1));
 await page.reload(); await page.waitForTimeout(500);
 await ctx.setOffline(true);
-for (const path of ["/login/", "/explo/", "/"]) {
+for (const path of ["/login/", "/explo/", "/portal/", "/"]) {
   await page.goto(B + path).catch(() => {});
   await page.waitForTimeout(400);
   const body = await page.textContent("body");
