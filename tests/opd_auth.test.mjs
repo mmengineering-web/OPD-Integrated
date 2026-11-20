@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PROJECTS as REAL } from "../src/lib/opd/config.js";
-import { signInAll, buildPortalModel, safeNext, normalizeRole, canUseForm, classifyAuthError, unreachableProjects, hubRole, sessionKey, topRole } from "../src/lib/opd/auth-core.js";
+import { signInAll, buildPortalModel, safeNext, normalizeRole, canUseForm, classifyAuthError, unreachableProjects, hubRole, sessionKey, topRole, exploSites, pickExploSite, infoFromPortal } from "../src/lib/opd/auth-core.js";
 import { readProfile } from "../src/lib/opd/profile.js";
 import { createFakeBackend, DEMO_USERS } from "./opd_fake.mjs";
 
@@ -105,3 +105,38 @@ test("roles and form limits", () => {
 });
 
 test("demo users exist", () => assert.ok(DEMO_USERS.length >= 2));
+
+// ---- Phase 2: Exploration on the portal session ----
+test("exploSites: only usable site exploration projects, in config order", async () => {
+  const a = await run(createFakeBackend(), "demo@can.local", "demo-demo-123");
+  const sites = exploSites(PROJECTS, a);
+  assert.deepEqual(sites.map((s) => s.site), ["WKM", "CDSM"].filter((c) => a.projects[`${c.toLowerCase()}-explo`].state === "ok"));
+  assert.ok(sites.every((s) => s.usable && s.role));
+  assert.ok(!sites.some((s) => s.site === undefined), "hub (HO) projects are not site tiles");
+});
+
+test("exploSites: unconfigured, invalid and unreachable projects are not offered", async () => {
+  const a = await run(createFakeBackend({ down: ["wkm-explo"] }), "demo@can.local", "demo-demo-123");
+  assert.ok(!exploSites(PROJECTS, a).some((s) => s.site === "WKM"));
+  const blank = PROJECTS.map((p) => (p.id === "cdsm-explo" ? { ...p, url: "", anonKey: "" } : p));
+  assert.ok(!exploSites(blank, a).some((s) => s.site === "CDSM"));
+});
+
+test("pickExploSite: ?site= wins, then last session, then guest site, then first allowed; never a site that is not allowed", () => {
+  const sites = [{ site: "WKM" }, { site: "CDSM" }];
+  assert.equal(pickExploSite(sites, { wanted: "cdsm", cached: "WKM" }), "CDSM");
+  assert.equal(pickExploSite(sites, { wanted: null, cached: "CDSM" }), "CDSM");
+  assert.equal(pickExploSite(sites, { guest: "CDSM" }), "CDSM");
+  assert.equal(pickExploSite(sites, { wanted: "BM", cached: "TMS" }), "WKM", "not allowed -> first allowed");
+  assert.equal(pickExploSite([], { wanted: "WKM" }), null);
+});
+
+test("infoFromPortal: permissions follow the portal role, forms limit carries over", () => {
+  const v = infoFromPortal("WKM", "a@b.c", { role: "viewer", name: "Ann" });
+  assert.equal(v.can_write, false); assert.equal(v.can_admin, false); assert.equal(v.name, "Ann"); assert.equal(v.forms, null);
+  const d = infoFromPortal("WKM", "a@b.c", { role: "data_entry", forms: ["collar"] });
+  assert.equal(d.can_write, true); assert.equal(d.can_admin, false); assert.deepEqual(d.forms, ["collar"]); assert.equal(d.name, "a@b.c");
+  const s = infoFromPortal("CDSM", "a@b.c", { role: "super_admin", forms: [] });
+  assert.equal(s.can_super, true); assert.equal(s.can_admin, true); assert.equal(s.forms, null, "empty list = all forms");
+  assert.equal(s.role_label, "Super admin");
+});

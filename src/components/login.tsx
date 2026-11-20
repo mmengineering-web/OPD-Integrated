@@ -92,6 +92,7 @@ export function Login({ onDone, lockedSite, initialSite }: { onDone: (i: Info) =
             {msg && <div role="alert" className="rounded-md border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-danger" id="l-msg">{msg}</div>}
             <Button type="submit" size="lg" className="w-full" disabled={busy || !online} id="l-go"><LogIn />Masuk</Button>
           </form>
+          <Button type="button" variant="secondary" className="w-full" id="l-portal" onClick={() => { localStorage.removeItem("opd_access"); /* stale portal access: sign in again */ location.assign(`/login/?next=${encodeURIComponent(`/explo/?site=${site}`)}`); }}>Masuk lewat One Portal</Button>
           <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />atau<span className="h-px flex-1 bg-border" /></div>
           <Button type="button" variant="outline" className="w-full" onClick={guest} id="l-guest">Input tanpa login (offline)</Button>
           <p className="text-sm text-muted-foreground">Login perlu internet. Tanpa sinyal, pilih <b>Input tanpa login</b>: data tersimpan di HP dan terkirim otomatis setelah Anda login.</p>

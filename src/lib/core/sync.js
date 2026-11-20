@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { SITES, PHOTO_BUCKET } from './config.js';
 import * as D from './db.js';
 import { loadCfg, setting } from './cfg.js';
+import { infoFromPortal } from '../opd/auth-core.js';
 
 const COLLAR_COLS = ['id','hole_id','hole_type','prospect','status','planned_lat','planned_lon','planned_elev',
   'planned_depth_m','asbuilt_lat','asbuilt_lon','asbuilt_elev','gps_accuracy_m','total_depth_m','photo_path',
@@ -105,6 +106,29 @@ export async function login(site, email, password) {
   info = null;
   localStorage.removeItem(GUEST_KEY);
   setInfo({ site, email, ...p });
+  return info;
+}
+
+// Portal session (Phase 2): the portal login already signed in to this site's project and stored the session under sb-exp-<SITE>.
+// This builds the Exploration client and info from it, with no second login. Returns null when there is no usable session.
+// `rec` is access.projects["<site>-explo"] from the portal (state, role, name, forms). Works offline: the cached info is reused.
+// Switching sites: the local database and the client change together in one synchronous step, so an outbox from one site can never be sent to another.
+export async function attachSession(site, rec) {
+  if (!SITES[site] || rec?.state !== 'ok') return null;
+  for (let n = 0; syncing && n < 150; n++) await new Promise(r => setTimeout(r, 100));   // let a running sync finish first
+  let c;
+  try { c = makeClient(site); } catch { return null; }
+  let sess = null;
+  try { sess = (await c.auth.getSession()).data?.session ?? null; } catch {}
+  if (!sess?.user) return null;
+  let next = null;
+  try { const x = JSON.parse(localStorage.getItem('exp_session') || 'null'); if (x && !x.guest && x.site === site && x.email === sess.user.email) next = x; } catch {}
+  if (!next && navigator.onLine) { try { const p = await fetchProfile(c, sess.user.id); if (p) next = { site, email: sess.user.email, ...p }; } catch {} }
+  if (!next) next = infoFromPortal(site, sess.user.email, rec);   // offline or profile unreadable: portal role for now, the next sync corrects it
+  if (D.db?.name !== `exploration_${site}`) D.openDb(site);
+  client = c; info = null;
+  localStorage.removeItem(GUEST_KEY);
+  setInfo(next);
   return info;
 }
 

@@ -31,11 +31,28 @@ export function legacyExplo() {
   return g ? { site: g, guest: true } : null;
 }
 
-/** Sign out of every project. Scope "local" so other devices of the same person stay signed in. */
+/**
+ * Remove cached server data (collars, progress, hours, surveys, samples, assays, photos) from every Exploration database on this phone.
+ * Records still waiting in the outbox and reference data stay, so nothing unsent is lost. Loaded lazily: the core touches IndexedDB.
+ */
+export async function purgeExplorationData() {
+  try {
+    const [D, { SITES }] = await Promise.all([import("../core/db.js"), import("../core/config.js")]);
+    let names = null;
+    try { names = ((await indexedDB.databases?.()) ?? []).map((d) => d.name); if (!names.length) names = null; } catch {}
+    for (const site of Object.keys(SITES)) {
+      if (names && !names.includes(`exploration_${site}`)) continue;   // never opened on this phone
+      try { D.openDb(site); await D.purgeServerData(); } catch {}
+    }
+  } catch {}
+}
+
+/** Sign out of every project. Scope "local" so other devices of the same person stay signed in. Also clears Exploration server data on this phone. */
 export async function logoutAll() {
   await Promise.all(PROJECTS.filter(isConfigured).map(async (p) => {
     try { await makeClient(p).auth.signOut({ scope: "local" }); } catch {}
   }));
+  await purgeExplorationData();
   localStorage.removeItem(ACCESS_KEY);
   LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
 }

@@ -65,11 +65,23 @@ const acc = await page.evaluate(() => JSON.parse(localStorage.getItem("opd_acces
 ok(acc.ok && acc.projects["wkm-explo"].state !== "unconfigured" && acc.projects["wkm-prod"].state === "noprofile", "access object saved; production project signed in but has no profile (stub)");
 ok(await page.evaluate(() => !!localStorage.getItem("fake-sb-exp-WKM")), "WKM session stored under the standalone key sb-exp-WKM");
 
-// 4. go to Exploration with site preselected
+// 4. Phase 2: Exploration opens on the portal session (no second login), site preselected from ?site=
 await wkm.click();
 await page.waitForURL(/\/explo\/\?site=WKM/);
-await page.waitForSelector("#l-site");
-ok((await page.inputValue("#l-site")) === "WKM", "exploration login preselects the site from ?site=");
+await page.waitForSelector("#sync-chip");
+ok((await page.locator("#l-site").count()) === 0, "exploration opens without a second login");
+ok((await page.textContent("body")).includes("WKM"), "exploration opened on the WKM site");
+ok((await page.locator('nav[aria-label="Breadcrumb"] a[href="/portal/"]').count()) === 1 && (await page.locator('nav[aria-label="Breadcrumb"] [aria-current="page"]').textContent()) === "WKM", "Portal > Exploration > site breadcrumb in the header");
+ok((await page.locator("#site-switch option").count()) === 2, "site switcher lists the sites the portal allows");
+await page.selectOption("#site-switch", "CDSM");
+await page.waitForURL(/\/explo\/\?site=CDSM/);
+await page.waitForFunction(() => document.querySelector("#site-switch")?.value === "CDSM");
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem("exp_session") || "{}").site === "CDSM"), "switching sites re-attaches the CDSM session");
+await page.selectOption("#site-switch", "WKM");
+await page.waitForFunction(() => document.querySelector("#site-switch")?.value === "WKM");
+// reload keeps the site and still needs no login
+await page.reload(); await page.waitForSelector("#sync-chip");
+ok((await page.locator("#l-site").count()) === 0, "reload stays signed in via the portal session");
 
 // 4b. signed in: home offers the portal; portal breadcrumb leads home
 await page.goto(B + "/");
@@ -82,7 +94,7 @@ ok((await page.locator('nav[aria-label="Breadcrumb"] [aria-current="page"]').tex
 // 5. sign out of the portal (lands on the public home)
 await page.waitForSelector("#b-out"); await page.click("#b-out");
 await page.waitForURL(B + "/");
-ok(await page.evaluate(() => !localStorage.getItem("opd_access") && !localStorage.getItem("fake-sb-exp-WKM")), "sign out clears the access object and every project session");
+ok(await page.evaluate(() => !localStorage.getItem("opd_access") && !localStorage.getItem("fake-sb-exp-WKM") && !localStorage.getItem("exp_session")), "sign out clears the access object, every project session and the Exploration session");
 
 // 6. legacy standalone session goes straight to Exploration
 await page.evaluate(() => localStorage.setItem("exp_session", JSON.stringify({ site: "WKM", email: "a@b.c", name: "A", role: "geologist", role_label: "G", can_write: true, can_admin: false, can_super: false })));

@@ -26,6 +26,10 @@ import { DashboardView } from "./dashboard-view";
 import { QcView } from "./qc-view";
 import { MapView } from "./map-view";
 import { Drill3dView } from "./drill3d-view";
+import { Breadcrumb } from "./opd/breadcrumb";
+import { PROJECTS } from "@/lib/opd/config.js";
+import { exploSites, pickExploSite } from "@/lib/opd/auth-core.js";
+import { loadAccess, logoutAll } from "@/lib/opd/session.js";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -50,28 +54,60 @@ function UpdateWatcher() {
 
 export function AppShell() {
   const [info, setInfo] = useState<Info | null | undefined>(undefined);
+  const [sites, setSites] = useState<string[]>([]);       // sites the portal login allows; empty = not on the portal session
   useEffect(() => {
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(console.warn);
   }, []);
   useEffect(() => {
     (async () => {
       const { S } = await core();
-      const i = await S.restore();
+      let i: Info | null = null;
+      const access = loadAccess();
+      if (access?.ok) {
+        // 1. portal session: no second login
+        const list = exploSites(PROJECTS, access);
+        let cached: string | null = null;
+        try { cached = JSON.parse(localStorage.getItem("exp_session") || "null")?.site ?? null; } catch {}
+        const site = pickExploSite(list, { wanted: new URLSearchParams(location.search).get("site"), cached, guest: localStorage.getItem("exp_guest_site") });
+        if (site) i = await S.attachSession(site, access.projects[`${site.toLowerCase()}-explo`]);
+        if (i) setSites(list.map((s: { site: string }) => s.site));
+      }
+      // 2. otherwise the old Exploration login or guest mode (kept as is)
+      if (!i) i = await S.restore();
       if (i) await openSite(i.site);
       setInfo(i || null);
     })().catch(() => setInfo(null));
   }, []);
 
+  // Site switcher: attach the other site's portal session, then open its local database.
+  const switchSite = useCallback(async (site: string) => {
+    const access = loadAccess();
+    if (!access?.ok) return false;
+    const { S } = await core();
+    const i = await S.attachSession(site, access.projects[`${site.toLowerCase()}-explo`]);
+    if (!i) return false;
+    await openSite(i.site);
+    history.replaceState(null, "", `/explo/?site=${i.site}`);
+    setInfo(i);
+    return true;
+  }, []);
+
+  // One login, one logout: leaving Exploration on the portal session signs out of every project and clears server data on this phone.
+  const portalLogout = useCallback(async () => { await logoutAll(); location.replace("/"); }, []);
+
   if (info === undefined) return <div className="grid min-h-dvh place-items-center text-sm text-muted-foreground" aria-busy>Memuat…</div>;
   return (
     <ToastProvider><ConfirmProvider>
       <UpdateWatcher />
-      {info ? <Main info={info} onLogout={() => setInfo(null)} /> : <Login onDone={setInfo} initialSite={typeof location !== "undefined" ? new URLSearchParams(location.search).get("site")?.toUpperCase() : null} />}
+      {info ? <Main key={info.site} info={info} sites={sites} onSwitch={switchSite} onPortalLogout={portalLogout} onLogout={() => setInfo(null)} />
+        : <Login onDone={setInfo} initialSite={typeof location !== "undefined" ? new URLSearchParams(location.search).get("site")?.toUpperCase() : null} />}
     </ConfirmProvider></ToastProvider>
   );
 }
 
-function Main({ info, onLogout }: { info: Info; onLogout: () => void }) {
+function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info; sites: string[]; onSwitch: (site: string) => Promise<boolean>; onPortalLogout: () => Promise<void>; onLogout: () => void }) {
+  const toast = useToast();
+  const onPortal = sites.length > 0 && !info.guest;
   const tabs = useMemo(() => tabsFor(info), [info]);
   const [tab, setTab] = useState(tabs[0]?.key ?? "report");
   const [pal, setPal] = useState(false);
@@ -97,11 +133,12 @@ function Main({ info, onLogout }: { info: Info; onLogout: () => void }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (onPortal) { await onPortalLogout(); return; }
     const { S, D } = await core();
     await S.logout();
     try { await D.purgeServerData(); } catch {}
     onLogout();
-  }, [onLogout]);
+  }, [onLogout, onPortal, onPortalLogout]);
 
   const go = (k: string) => { setTab(k); setPal(false); window.scrollTo({ top: 0 }); };
   const groups = useMemo(() => {
@@ -136,7 +173,7 @@ function Main({ info, onLogout }: { info: Info; onLogout: () => void }) {
         <div className="mt-auto flex flex-col gap-2 border-t pt-3">
           <div className="flex items-center gap-2 px-1"><span className="grid size-8 place-items-center rounded-full bg-muted text-xs font-semibold">{(info.name || "?").slice(0, 2).toUpperCase()}</span>
             <div className="min-w-0 text-sm leading-tight"><div className="truncate font-medium">{info.name}</div><div className="truncate text-xs text-muted-foreground">{info.site} · {info.role_label}</div></div></div>
-          <Button variant="outline" size="sm" onClick={logout}><LogOut />{info.guest ? "Ke halaman login" : "Keluar"}</Button>
+          <Button variant="outline" size="sm" onClick={logout}><LogOut />{info.guest ? "Ke halaman login" : onPortal ? "Keluar dari Portal" : "Keluar"}</Button>
         </div>
       </aside>
 
@@ -146,6 +183,12 @@ function Main({ info, onLogout }: { info: Info; onLogout: () => void }) {
         <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden"><BrandMark className="size-8 shrink-0" /><div className="min-w-0 text-sm leading-tight"><div className="truncate font-semibold">{info.site}</div><div className="truncate text-xs text-muted-foreground">{info.name}</div></div></div>
         <h1 className="hidden text-base font-semibold lg:block">{cur?.label}</h1>
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          {onPortal && sites.length > 1 && (
+            <select id="site-switch" value={info.site} aria-label="Ganti site" className="h-8 rounded-md border bg-card px-2 text-xs font-medium"
+              onChange={async e => { const ok = await onSwitch(e.target.value); if (!ok) toast("Tidak bisa membuka site itu. Masuk ulang lewat One Portal."); }}>
+              {sites.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
           <motion.span key={chipKey} initial={{ scale: 0.92, opacity: 0.6 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 500, damping: 22 }}
             className={cn("mr-1 inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-medium", chip.c)} id="sync-chip"><Ico name={chip.i} className={cn("size-3", st.syncing && "animate-spin")} /><span className="sm:hidden">{chip.s}</span><span className="hidden sm:inline">{chip.t}</span></motion.span>
           <Button variant="ghost" size="sm" onClick={() => setPal(true)} aria-label="Cari atau buka perintah" id="b-pal"><Search /><kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[.6875rem] text-muted-foreground sm:inline">Ctrl K</kbd></Button>
@@ -156,6 +199,7 @@ function Main({ info, onLogout }: { info: Info; onLogout: () => void }) {
 
       {/* content */}
       <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-[calc(var(--tabbar-h)+var(--safe-b)+1.5rem)] pt-5 lg:pb-10">
+        {onPortal && <Breadcrumb className="mb-3" items={[{ label: "Portal", href: "/portal/" }, { label: "Exploration" }, { label: info.site }]} />}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }} data-tab={tab} id="view">
             {tab === "progress" ? <ProgressForm info={info} tick={`${st.last}-${st.pending}`} />

@@ -19,7 +19,7 @@ export function core(): Promise<Core> {
 
 export async function openSite(site: string) {
   const { D, cfg } = await core();
-  D.openDb(site);
+  if (D.db?.name !== `exploration_${site}`) D.openDb(site);   // attachSession may have opened it already
   await cfg.loadCfg();
 }
 

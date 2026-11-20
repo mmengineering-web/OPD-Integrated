@@ -168,3 +168,33 @@ export function safeNext(next, fallback = '/') {
 /** Exploration projects keep the storage key of the standalone app (sb-exp-<SITE>) so phones that are signed in stay signed in. */
 export const sessionKey = (p) => p.storageKey || `sb-opd-${p.id}`;
 export const ACCESS_KEY = 'opd_access';
+
+// ---- Phase 2: Exploration on the portal session ----
+
+/** Exploration sites the person may open: site-scope exploration projects that are configured and whose state is "ok". */
+export function exploSites(projects, access) {
+  return projects
+    .filter((p) => p.scope === 'site' && p.module === 'exploration' && isConfigured(p))
+    .map((p) => ({ site: p.site, projectId: p.id, ...projectAccess(access, p.id) }))
+    .filter((s) => s.usable);
+}
+
+/** Which site to open: ?site= first, then the site of the last Exploration session, then a guest site, then the first allowed one. */
+export function pickExploSite(sites, { wanted, cached, guest } = {}) {
+  const codes = sites.map((s) => s.site);
+  for (const c of [wanted, cached, guest]) {
+    const u = typeof c === 'string' ? c.toUpperCase() : null;
+    if (u && codes.includes(u)) return u;
+  }
+  return codes[0] ?? null;
+}
+
+/** Exploration info object built from the portal role. Used when the server profile cannot be read (offline); the next sync replaces it. */
+export function infoFromPortal(site, email, rec) {
+  const role = rec?.role ?? 'viewer';
+  return {
+    site, email, name: rec?.name || email, role, role_label: ROLE_LABEL[role] || role,
+    can_write: canInput(role), can_admin: canEditMaster(role), can_super: canManageUsers(role),
+    forms: Array.isArray(rec?.forms) && rec.forms.length ? rec.forms : null,
+  };
+}
