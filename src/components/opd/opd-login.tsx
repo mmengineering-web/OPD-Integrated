@@ -75,7 +75,7 @@ export function OpdLogin() {
             <Button type="submit" size="lg" className="w-full" disabled={busy || !online} id="l-go"><LogIn />{busy ? "Signing in…" : "Sign in"}</Button>
           </form>
           <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
-          <Button type="button" variant="outline" className="w-full" id="l-guest" onClick={() => location.assign("/explo/")}>
+          <Button type="button" variant="outline" className="h-auto min-h-9 w-full whitespace-normal py-2 text-center" id="l-guest" onClick={() => location.assign("/explo/")}>
             Exploration entry without signing in (offline)
           </Button>
           <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Same email and password for every project</span>
