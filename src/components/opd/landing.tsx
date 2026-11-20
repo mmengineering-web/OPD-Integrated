@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Building2, Factory, MapPin, Moon, Pickaxe, Sun, WifiOff } from "lucide-react";
 import { useTheme } from "@/lib/ui-state";
 import { BrandMark } from "@/components/brand-mark";
@@ -37,6 +37,93 @@ function Pill({ href, children, dark = true }: { href: string; children: React.R
       : "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--foreground)_6%,var(--card))] px-5 text-sm font-medium text-foreground transition-[transform,background] duration-200 hover:-translate-y-px hover:bg-[color-mix(in_srgb,var(--foreground)_10%,var(--card))] active:scale-[.985]"}>
       {children}
     </a>
+  );
+}
+
+const CARDS = [
+  { id: "explo", icon: Pickaxe, title: "Log drilling progress and samples, even without signal", tag: "Exploration", note: "2 sites live", href: "/explo/", cta: "Open exploration" },
+  { id: "hq", icon: Building2, title: "See every site in one place", tag: "Head office", note: "all roles", href: "/portal/", cta: "Open portal" },
+  { id: "prod", icon: Factory, title: "Upload daily production reports", tag: "Production", note: "coming soon", href: null, cta: "Coming soon" },
+];
+
+/** Interactive card deck: drag or swipe, tap a side card, use the dots or the arrow keys. */
+function Deck() {
+  const [active, setActive] = useState(1);
+  const [drag, setDrag] = useState(0);
+  const s = useRef({ x: 0, down: false, moved: false, end: 0 });
+  const go = (n: number) => setActive(Math.max(0, Math.min(CARDS.length - 1, n)));
+
+  const finish = (e: React.PointerEvent<HTMLDivElement>) => {
+    const t = s.current;
+    if (!t.down) return;
+    t.down = false;
+    if (t.moved) {
+      const dx = e.clientX - t.x;
+      go(active + (dx < -48 ? 1 : dx > 48 ? -1 : 0));
+      t.end = performance.now();
+    }
+    t.moved = false;
+    setDrag(0);
+  };
+
+  return (
+    <div
+      className="land-deck"
+      role="group"
+      aria-roledescription="carousel"
+      aria-label="Modules"
+      data-drag={drag !== 0 ? "" : undefined}
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); } if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); } }}
+      onPointerDown={e => { if (e.button > 0) return; s.current = { ...s.current, x: e.clientX, down: true, moved: false }; }}
+      onPointerMove={e => {
+        const t = s.current;
+        if (!t.down) return;
+        const dx = e.clientX - t.x;
+        if (!t.moved && Math.abs(dx) > 6) { t.moved = true; e.currentTarget.setPointerCapture(e.pointerId); }
+        if (t.moved) setDrag(dx);
+      }}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+    >
+      {CARDS.map((c, i) => {
+        const k = i - active;
+        const Icon = c.icon;
+        const on = k === 0;
+        const body = (
+          <>
+            <span className={on ? "land-ico land-ico-on" : "land-ico"}><Icon className="size-4" /></span>
+            <span className="land-card-t">{c.title}</span>
+            <span className="land-card-m">{c.tag} <i /> {c.note}</span>
+            <span className="land-card-cta" aria-hidden={!on}>{c.cta}{c.href && <ArrowRight className="size-3.5" />}</span>
+          </>
+        );
+        const style = { ["--k" as string]: k, ["--ak" as string]: Math.abs(k), ["--d" as string]: `${drag}px`, zIndex: 10 - Math.abs(k) } as React.CSSProperties;
+        const common = {
+          className: "land-card",
+          style,
+          "data-on": on ? "" : undefined,
+          "data-id": c.id,
+          onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+            e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+          },
+        };
+        const pick = (e: React.MouseEvent) => {
+          if (performance.now() - s.current.end < 300) { e.preventDefault(); return; }
+          if (!on) { e.preventDefault(); go(i); }
+        };
+        return c.href && on
+          ? <a key={c.id} href={c.href} {...common} onClick={pick} draggable={false}>{body}</a>
+          : <div key={c.id} role="button" tabIndex={on ? -1 : 0} aria-label={on ? undefined : `Show ${c.tag}`} aria-disabled={!c.href && on ? true : undefined} {...common} onClick={pick} onKeyDown={e => { if (!on && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(i); } }}>{body}</div>;
+      })}
+      <div className="land-dots">
+        {CARDS.map((c, i) => (
+          <button key={c.id} type="button" aria-label={`Show ${c.tag}`} aria-current={i === active ? "true" : undefined} onClick={() => go(i)}><span /></button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -88,29 +175,7 @@ export function Landing() {
           <span className="land-chip land-chip-a" aria-hidden><MapPin className="size-5" /></span>
           <span className="land-chip land-chip-b" aria-hidden><WifiOff className="size-5" /></span>
 
-          <div className="land-fan">
-            <a href="/explo/" className="land-card land-card-l">
-              <svg className="land-mound" viewBox="0 0 140 70" aria-hidden>
-                <path d="M0 70a70 70 0 0 1 140 0z" fill="var(--strata-5)" />
-                <path d="M16 70a54 54 0 0 1 108 0z" fill="var(--strata-4)" />
-                <path d="M32 70a38 38 0 0 1 76 0z" fill="var(--strata-3)" />
-                <path d="M48 70a22 22 0 0 1 44 0z" fill="var(--strata-2)" />
-              </svg>
-              <span className="land-ico"><Pickaxe className="size-4" /></span>
-              <span className="land-card-t">Log drilling progress and samples, even without signal</span>
-              <span className="land-card-m">Exploration <i /> 2 sites live</span>
-            </a>
-            <a href="/portal/" className="land-card land-card-c">
-              <span className="land-ico land-ico-on"><Building2 className="size-4" /></span>
-              <span className="land-card-t">See every site in one place</span>
-              <span className="land-card-m">Head office <i /> all roles</span>
-            </a>
-            <div className="land-card land-card-r" aria-disabled>
-              <span className="land-ico"><Factory className="size-4" /></span>
-              <span className="land-card-t">Upload daily production reports</span>
-              <span className="land-card-m">Production <i /> coming soon</span>
-            </div>
-          </div>
+          <Deck />
         </section>
 
         <section id="modules" className="land-sec" aria-labelledby="h-mod">

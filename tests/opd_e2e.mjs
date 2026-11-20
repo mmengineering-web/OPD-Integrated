@@ -33,6 +33,10 @@ ok(/one login/i.test(await page.textContent("h1")), "home shows the hero without
 ok((await page.locator('#n-login').getAttribute("href")) === "/login/", "Log in goes to /login/");
 ok((await page.locator('header a:has-text("Get started")').count()) === 1, "Get started button is in the header");
 ok(page.url() === B + "/", "home does not redirect when signed out");
+await page.locator(".land-dots button").nth(0).click(); await page.waitForTimeout(400);
+ok((await page.locator(".land-card[data-on]").getAttribute("data-id")) === "explo", "card deck: dot selects the Exploration card");
+await page.locator('.land-card[data-id="prod"]').click({ force: true }); await page.waitForTimeout(400);
+ok((await page.locator(".land-card[data-on]").getAttribute("data-id")) === "prod", "card deck: tapping a side card brings it forward");
 
 // 1. portal without access -> login with next
 await page.goto(B + "/portal/");
