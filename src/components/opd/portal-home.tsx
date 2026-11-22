@@ -1,14 +1,11 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowUpRight, Building2, LogOut, MapPin, Moon, Pickaxe, Factory, Sun } from "lucide-react";
-import { useTheme } from "@/lib/ui-state";
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
+import { AlertTriangle, ArrowUpRight, Building2, MapPin, Pickaxe, Factory } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { BrandMark } from "@/components/brand-mark";
 import { Breadcrumb } from "@/components/opd/breadcrumb";
 import { PROJECTS } from "@/lib/opd/config.js";
-import { buildPortalModel, unreachableProjects, topRole, ROLE_LABEL } from "@/lib/opd/auth-core.js";
-import { loadAccess, legacyExplo, logoutAll } from "@/lib/opd/session.js";
+import { buildPortalModel, unreachableProjects, ROLE_LABEL } from "@/lib/opd/auth-core.js";
+import { AppFrame, type Access } from "@/components/opd/app-frame";
 
 type Mod = { projectId: string; usable: boolean; state: string; role: string | null } | null;
 const STATE_TEXT: Record<string, string> = {
@@ -31,35 +28,11 @@ function ModuleLink({ icon: Icon, label, mod, href }: { icon: React.ComponentTyp
     : <div className={`${cls} bg-muted/40 text-muted-foreground`} aria-disabled data-module={mod?.projectId ?? "none"}>{body}</div>;
 }
 
-export function PortalHome() {
-  const [access, setAccess] = useState<ReturnType<typeof loadAccess> | undefined>(undefined);
-  const { theme, toggle } = useTheme();
-
-  useEffect(() => {
-    const a = loadAccess();
-    if (a?.ok) { setAccess(a); return; }
-    // Phones that were signed in to the standalone Exploration app (or use guest mode) keep working: go straight there.
-    if (legacyExplo()) { location.replace("/explo/"); return; }
-    location.replace("/login/?next=/portal/");
-  }, []);
-
-  const model = useMemo(() => (access ? buildPortalModel(PROJECTS, access) : null), [access]);
-  if (!access || !model) return <div className="grid min-h-dvh place-items-center text-sm text-muted-foreground" aria-busy>Loading…</div>;
-
+function Home({ access }: { access: Access }) {
+  const model = useMemo(() => buildPortalModel(PROJECTS, access), [access]);
   const down = unreachableProjects(access).map((id: string) => PROJECTS.find(p => p.id === id)?.name ?? id);
-  const role = topRole(access);
-  const out = async () => { await logoutAll(); location.replace("/"); };
-
   return (
-    <div className="min-h-dvh">
-      <header className="sticky top-0 z-[20] flex h-[var(--topbar-h)] items-center gap-3 border-b bg-[color-mix(in_srgb,var(--card)_92%,transparent)] px-4 backdrop-blur">
-        <a href="/" aria-label="One Portal Data, home"><BrandMark className="size-8" /></a>
-        <div className="min-w-0 flex-1 text-sm leading-tight"><div className="font-serif text-base font-medium">One Portal Data</div>
-          <div className="truncate text-xs text-muted-foreground" id="who">{access.name} · {role ? ROLE_LABEL[role as keyof typeof ROLE_LABEL] : "no role"}</div></div>
-        <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">{theme === "dark" ? <Sun /> : <Moon />}</Button>
-        <Button variant="outline" size="sm" onClick={out} id="b-out"><LogOut />Sign out</Button>
-      </header>
-      <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-10 pt-4">
+    <>
         <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/" }, { label: "Portal" }]} />
         {down.length > 0 && (
           <div role="status" id="down-banner" className="mb-4 flex items-start gap-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-sm text-warning">
@@ -83,7 +56,10 @@ export function PortalHome() {
           ))}
         </div>
         <p className="mt-6 text-xs text-muted-foreground">Production upload arrives in a later release; those tiles stay greyed until then.</p>
-      </main>
-    </div>
+    </>
   );
+}
+
+export function PortalHome() {
+  return <AppFrame active="home" legacyRedirect>{access => <Home access={access} />}</AppFrame>;
 }

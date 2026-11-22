@@ -91,10 +91,42 @@ await page.goto(B + "/portal/");
 await page.waitForSelector('nav[aria-label="Breadcrumb"]');
 ok((await page.locator('nav[aria-label="Breadcrumb"] [aria-current="page"]').textContent()) === "Portal", "portal breadcrumb marks the current page");
 
+// 4c. main menu: six pages, each reachable, active item marked, content renders
+const NAVS = [["home", "Home", "/portal/"], ["production", "Production", "/production/"], ["explo", "Exploration", "/explo/"], ["documents", "Documents", "/documents/"], ["tools", "Mining Tools", "/tools/"], ["help", "Help", "/help/"]];
+await page.setViewportSize({ width: 1200, height: 800 });
+await page.goto(B + "/portal/"); await page.waitForSelector('header nav[aria-label="Main"]');
+ok(JSON.stringify(await page.locator('header nav[aria-label="Main"] a').allTextContents()) === JSON.stringify(NAVS.map(n => n[1])), "menu lists Home, Production, Exploration, Documents, Mining Tools, Help");
+for (const [key, label, path] of NAVS.filter(n => n[0] !== "explo")) {
+  await page.goto(B + path); await page.waitForSelector('header nav[aria-label="Main"]');
+  ok((await page.locator('header nav[aria-label="Main"] [aria-current="page"]').textContent()) === label, `${path}: ${label} is the active menu item`);
+}
+await page.goto(B + "/production/"); await page.waitForSelector('[data-tile="WKM"]');
+ok((await page.locator('[data-tile="WKM"]').count()) === 1, "production lists the sites");
+await page.goto(B + "/documents/"); await page.waitForSelector("[data-shelf]");
+ok((await page.locator("[data-shelf]").count()) === 6, "documents shows the six shelves");
+await page.goto(B + "/help/"); await page.waitForSelector("[data-faq] details");
+await page.locator("[data-faq] summary").first().click();
+ok(await page.locator("[data-faq] details").first().evaluate(e => e.open), "help: a question opens");
+await page.goto(B + "/tools/"); await page.waitForSelector("#utm-a");
+await page.fill("#utm-a", "500000"); await page.fill("#utm-b", "9500000"); await page.fill("#utm-zone", "51");
+ok((await page.textContent("#utm-o2")) === "123.000000", "tools: UTM on the central meridian gives longitude 123");
+await page.fill("#t-vol", "1000");
+ok((await page.textContent("#t-wet")) === "1,600.0" && (await page.textContent("#t-dry")) === "1,120.0", "tools: 1000 bcm x 1.6 t/m3 = 1,600 wet t, 1,120 dry t at 30% moisture");
+await page.setViewportSize({ width: 390, height: 800 });
+await page.goto(B + "/help/"); await page.waitForSelector('header nav[aria-label="Main"]:visible');
+ok(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "phone width: menu does not widen the page");
+await page.setViewportSize({ width: 1200, height: 800 });
+await page.click('header a[data-nav="explo"]'); await page.waitForURL(/\/explo\//); await page.waitForSelector("#sync-chip");
+ok((await page.locator('main nav[aria-label="Main"] [aria-current="page"]').textContent()) === "Exploration", "Exploration shows the same menu with Exploration active");
+
 // 5. sign out of the portal (lands on the public home)
-await page.waitForSelector("#b-out"); await page.click("#b-out");
+await page.goto(B + "/portal/"); await page.waitForSelector("#b-out"); await page.click("#b-out");
 await page.waitForURL(B + "/");
 ok(await page.evaluate(() => !localStorage.getItem("opd_access") && !localStorage.getItem("fake-sb-exp-WKM") && !localStorage.getItem("exp_session")), "sign out clears the access object, every project session and the Exploration session");
+
+// 5b. signed out: a deep link goes to login and comes back to that page
+await page.goto(B + "/tools/"); await page.waitForURL(/\/login\/\?next=%2Ftools%2F/);
+ok(true, "signed out: /tools/ redirects to login with next");
 
 // 6. legacy standalone session goes straight to Exploration
 await page.evaluate(() => localStorage.setItem("exp_session", JSON.stringify({ site: "WKM", email: "a@b.c", name: "A", role: "geologist", role_label: "G", can_write: true, can_admin: false, can_super: false })));

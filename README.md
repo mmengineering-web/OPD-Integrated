@@ -89,7 +89,12 @@ Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px 
 | `/login/` | OPD login | One email and password. Returns to `/portal/` by default. `?next=` accepts same-origin paths only. |
 | `/portal/` | Signed-in home | Module and site tiles. Signed out, it redirects to `/login/?next=/portal/`. |
 | `/explo/` | Exploration app | `?site=WKM` preselects the site. Guest mode available. |
-| `/production/` | Production module | Planned (Phase 4). |
+| `/production/` | Production | Access per site; upload arrives in Phase 4. |
+| `/documents/` | Documents | Shelves layout; document store arrives in Phase 5. |
+| `/tools/` | Mining Tools | Working calculators: UTM and lat/lon, volume to wet and dry tonnes. |
+| `/help/` | Help | FAQ: accounts, greyed modules, offline use, roles, sign-out. |
+
+Signed-in pages share one menu (`AppFrame` and `AppNav` in `src/components/opd/app-frame.tsx`): **Home** (`/portal/`), **Production**, **Exploration**, **Documents**, **Mining Tools**, **Help**. Signed out, each page redirects to `/login/?next=<page>`.
 
 Flow: **Home → Log in → Portal → Exploration (or Production)**. Breadcrumbs show the path (Home › Log in, Home › Portal). Sign-out lands on `/`.
 

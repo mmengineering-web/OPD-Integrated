@@ -27,6 +27,7 @@ import { QcView } from "./qc-view";
 import { MapView } from "./map-view";
 import { Drill3dView } from "./drill3d-view";
 import { Breadcrumb } from "./opd/breadcrumb";
+import { AppNav } from "./opd/app-frame";
 import { PROJECTS } from "@/lib/opd/config.js";
 import { exploSites, pickExploSite } from "@/lib/opd/auth-core.js";
 import { loadAccess, logoutAll } from "@/lib/opd/session.js";
@@ -199,6 +200,7 @@ function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info;
 
       {/* content */}
       <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-[calc(var(--tabbar-h)+var(--safe-b)+1.5rem)] pt-5 lg:pb-10">
+        {onPortal && <AppNav active="explo" className="mb-3" />}
         {onPortal && <Breadcrumb className="mb-3" items={[{ label: "Portal", href: "/portal/" }, { label: "Exploration" }, { label: info.site }]} />}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }} data-tab={tab} id="view">
