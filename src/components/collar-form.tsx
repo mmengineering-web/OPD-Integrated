@@ -9,6 +9,8 @@ import { useToast } from "./toast";
 import { useConfirm } from "./confirm";
 import { Button } from "./ui/button";
 import { Input, Select, Textarea } from "./ui/input";
+import { MaskedInput } from "./ui/masked-input";
+import { maskHoleId } from "@/lib/opd/masks.js";
 import { Card, CardTitle } from "./ui/card";
 import { Field, FormActions, Msgs, PhotoField, usePhoto, num, txt, s } from "./form-kit";
 import { RecordList, type Col } from "./record-list";
@@ -133,7 +135,7 @@ export function CollarForm({ info, tick }: { info: Info; tick?: string }) {
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Hole ID"><Input name="hole_id" required autoCapitalize="characters" value={f.hole_id} onChange={e => set("hole_id", e.target.value)} /></Field>
+            <Field label="Hole ID"><MaskedInput name="hole_id" mask={maskHoleId} required autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="WKM-DD-0004" value={f.hole_id} onValueChange={v => set("hole_id", v)} /></Field>
             <Field label="Tipe"><Select name="hole_type" value={f.hole_type} onChange={e => set("hole_type", e.target.value)}>{d.types.map((t: any) => <option key={t.code} value={t.code}>{t.label}</option>)}</Select></Field>
           </div>
           <Button type="button" variant="outline" size="sm" className="w-fit" onClick={genId} id="b-genid">Buat Hole ID baru (tak terencana)</Button>

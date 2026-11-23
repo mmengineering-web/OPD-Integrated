@@ -14,7 +14,7 @@ def mk(p, w=1360, h=900):
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)
     return b, pg, errs
 def login(pg):
-    pg.goto(BASE + '/explo/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_selector('#f'); pg.wait_for_timeout(1500)
+    pg.goto(BASE + '/login/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_url('**/portal/'); pg.goto(BASE + '/explo/'); pg.wait_for_selector('#f'); pg.wait_for_timeout(1500)
 def tab(pg, t):
     pg.click(f'aside button[data-t={t}]'); pg.wait_for_selector('#f'); pg.wait_for_timeout(600)
 def count(pg, store, where=''):

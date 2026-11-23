@@ -8,6 +8,8 @@ import { takeEditing } from "@/lib/editing";
 import { useToast } from "./toast";
 import { Button } from "./ui/button";
 import { Input, Select, Textarea } from "./ui/input";
+import { MaskedInput } from "./ui/masked-input";
+import { maskHoleId } from "@/lib/opd/masks.js";
 import { Card, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 
@@ -209,7 +211,7 @@ export function ProgressForm({ info, tick }: { info: Info; tick?: string }) {
             )}
           </Field>
           <Field label="Hole ID">
-            <Input name="hole_id" list="holes" autoCapitalize="characters" required value={f.hole_id} onChange={e => set("hole_id", e.target.value)} />
+            <MaskedInput name="hole_id" mask={maskHoleId} list="holes" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="WKM-DD-0004" required value={f.hole_id} onValueChange={v => set("hole_id", v)} />
             <datalist id="holes">{holeList.map(h => <option key={h} value={h} />)}</datalist>
             <span className="min-h-4 text-xs font-normal text-muted-foreground" id="holeinfo">{collar ? `${collar.hole_type ?? ""} · ${collar.prospect || "—"} · planned ${collar.planned_depth_m ?? "—"} m · total ${collar.total_depth_m ?? "—"} m` : ""}</span>
           </Field>

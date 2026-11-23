@@ -198,3 +198,27 @@ export function infoFromPortal(site, email, rec) {
     forms: Array.isArray(rec?.forms) && rec.forms.length ? rec.forms : null,
   };
 }
+
+// ---- Page access: which pages need which kind of account ----
+
+/**
+ * Can this person open a page that needs `need`?
+ *   "any"          at least one usable account (the person is signed in)
+ *   "production"   a usable production project (head office or a site)
+ *   "exploration"  a usable exploration project (head office or a site)
+ *   "ho-production" a usable Hub production project (prod.hub): the all-sites views
+ *   "super_admin"  super admin in at least one project (user administration)
+ */
+export function canOpen(projects, access, need) {
+  if (!access?.ok) return false;
+  if (!need || need === 'any') return true;
+  if (need === 'ho-production') return projectAccess(access, 'hub-prod').usable;        // the all-sites dashboard: only the Hub production project
+  if (need === 'super_admin') return projects.some((p) => projectAccess(access, p.id).role === 'super_admin');
+  return projects.some((p) => p.module === need && projectAccess(access, p.id).usable);
+}
+
+/** Usable projects of a module (or all modules for "any"), for showing the person what their access is. */
+export function usableProjects(projects, access, need) {
+  return projects.filter((p) => (!need || need === 'any' || p.module === need) && projectAccess(access, p.id).usable)
+    .map((p) => ({ id: p.id, name: p.name, site: p.site ?? null, module: p.module, role: projectAccess(access, p.id).role }));
+}

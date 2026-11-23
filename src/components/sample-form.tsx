@@ -8,6 +8,8 @@ import { useToast } from "./toast";
 import { useConfirm } from "./confirm";
 import { Button } from "./ui/button";
 import { Input, Select, Textarea } from "./ui/input";
+import { MaskedInput } from "./ui/masked-input";
+import { maskHoleId } from "@/lib/opd/masks.js";
 import { Card, CardTitle } from "./ui/card";
 import { Field, FormActions, Msgs, today, num, txt, s } from "./form-kit";
 import { RecordList, type Col } from "./record-list";
@@ -143,8 +145,8 @@ export function SampleForm({ info, tick }: { info: Info; tick?: string }) {
         <Card>
           <CardTitle>{isEdit ? "Edit" : "Register"} sampel</CardTitle>
           <Field label="Hole ID">
-            <Input name="hole_id" list="sholes" required autoCapitalize="characters" value={f.hole_id}
-              onChange={e => set("hole_id", e.target.value)}
+            <MaskedInput name="hole_id" mask={maskHoleId} list="sholes" required autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="WKM-DD-0004" value={f.hole_id}
+              onValueChange={v => set("hole_id", v)}
               onBlur={() => { sUi.hole = hid; if (!isEdit && f.from_m === "") set("from_m", String(lastTo(d.all, hid) || "")); }} />
             <datalist id="sholes">{holes.map(h => <option key={h} value={h} />)}</datalist>
           </Field>

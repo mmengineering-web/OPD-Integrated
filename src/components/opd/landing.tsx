@@ -1,21 +1,15 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Building2, Factory, MapPin, Moon, Pickaxe, Sun, WifiOff } from "lucide-react";
-import { useTheme } from "@/lib/ui-state";
-import { BrandMark } from "@/components/brand-mark";
+import { useRef, useState } from "react";
+import { ArrowRight, Building2, FileText, Factory, MapPin, Pickaxe, Wrench, WifiOff } from "lucide-react";
 import { exploProject, PROJECTS } from "@/lib/opd/config.js";
-import { loadAccess, legacyExplo } from "@/lib/opd/session.js";
-
-const NAV = [
-  { href: "#modules", label: "Modules" },
-  { href: "#sites", label: "Sites" },
-  { href: "#how", label: "How it works" },
-];
+import { AppFrame } from "@/components/opd/app-frame";
 
 const MODULES = [
-  { icon: Pickaxe, name: "Exploration", state: "Live", text: "Drilling progress, collars, hours and samples, with QC, maps and 3D. Entry works offline and syncs when the signal returns.", href: "/explo/", cta: "Open exploration" },
-  { icon: Building2, name: "Head office", state: "Live", text: "One view across every site. Role-based access follows your account in each project.", href: "/portal/", cta: "Open portal" },
-  { icon: Factory, name: "Production", state: "Coming soon", text: "Upload daily reports from WKM, BM and TMS. Files are parsed in the browser before anything is sent.", href: null, cta: "" },
+  { icon: Pickaxe, name: "Exploration", state: "Live", text: "Field data entry that works offline, plus dashboard, QC, map and 3D for each site.", href: "/exploration/", cta: "Open Exploration" },
+  { icon: Factory, name: "Production", state: "In progress", text: "Daily reports from WKM, BM and TMS, and the dashboard that reads them.", href: "/production/", cta: "Open Production" },
+  { icon: FileText, name: "Documents", state: "In progress", text: "Reports, procedures and templates, shown by your role and site.", href: "/documents/", cta: "Open Documents" },
+  { icon: Wrench, name: "Tools", state: "Calculators live", text: "UTM and tonnage calculators today. Pricing and drillhole tools next.", href: "/tools/", cta: "Open Tools" },
+  { icon: Building2, name: "Portal", state: "Live", text: "One view of every site and module your account can open.", href: "/portal/", cta: "Open Portal" },
 ];
 
 const SITE_CODES = ["WKM", "CDSM", "BM", "TMS", "IBN", "TPB", "AJB", "CDS"];
@@ -41,9 +35,9 @@ function Pill({ href, children, dark = true }: { href: string; children: React.R
 }
 
 const CARDS = [
-  { id: "explo", icon: Pickaxe, title: "Log drilling progress and samples, even without signal", tag: "Exploration", note: "2 sites live", href: "/explo/", cta: "Open exploration" },
-  { id: "hq", icon: Building2, title: "See every site in one place", tag: "Head office", note: "all roles", href: "/portal/", cta: "Open portal" },
-  { id: "prod", icon: Factory, title: "Upload daily production reports", tag: "Production", note: "coming soon", href: null, cta: "Coming soon" },
+  { id: "explo", icon: Pickaxe, title: "Log drilling progress and samples, even without signal", tag: "Exploration", note: "2 sites live", href: "/exploration/", cta: "Open Exploration" },
+  { id: "hq", icon: Building2, title: "See every site in one place", tag: "Portal", note: "all roles", href: "/portal/", cta: "Open Portal" },
+  { id: "prod", icon: Factory, title: "Send daily production reports", tag: "Production", note: "in progress", href: "/production/", cta: "Open Production" },
 ];
 
 /** Interactive card deck: drag or swipe, tap a side card, use the dots or the arrow keys. */
@@ -71,7 +65,7 @@ function Deck() {
       className="land-deck"
       role="group"
       aria-roledescription="carousel"
-      aria-label="Modules"
+      aria-label="Destinations"
       data-drag={drag !== 0 ? "" : undefined}
       tabIndex={0}
       onKeyDown={e => { if (e.key === "ArrowLeft") { e.preventDefault(); go(active - 1); } if (e.key === "ArrowRight") { e.preventDefault(); go(active + 1); } }}
@@ -128,47 +122,19 @@ function Deck() {
 }
 
 export function Landing() {
-  const [access, setAccess] = useState<ReturnType<typeof loadAccess>>(null);
-  const { theme, toggle } = useTheme();
-
-  useEffect(() => {
-    const a = loadAccess();
-    if (a?.ok) { setAccess(a); return; }
-    // Phones that were signed in to the standalone Exploration app (or use guest mode) keep going straight there.
-    if (legacyExplo()) location.replace("/explo/");
-  }, []);
-
-  const signedIn = !!access?.ok;
-
   return (
-    <div className="relative min-h-dvh">
-      <header className="land-nav absolute inset-x-0 top-0 z-[20]">
-        <div className="mx-auto flex h-[4.5rem] w-full max-w-[72rem] items-center gap-4 px-5">
-          <a href="/" className="flex items-center gap-2.5" aria-label="One Portal Data, home">
-            <BrandMark className="size-8" />
-            <span className="hidden font-serif text-xl font-medium tracking-tight sm:inline">One Portal Data</span>
-          </a>
-          <nav aria-label="Primary" className="mx-auto hidden items-center gap-1 md:flex">
-            {NAV.map(n => <a key={n.href} href={n.href} className="inline-flex h-10 items-center rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground">{n.label}</a>)}
-          </nav>
-          <div className="ml-auto flex items-center gap-1.5 md:ml-0">
-            <button type="button" onClick={toggle} aria-label="Toggle theme" className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</button>
-            {signedIn
-              ? <><span className="hidden max-w-[10rem] truncate text-sm text-muted-foreground sm:inline" id="who-home">{access?.name}</span><Pill href="/portal/">Open portal</Pill></>
-              : <><a href="/login/" className="inline-flex h-10 items-center whitespace-nowrap rounded-full px-3 text-sm text-muted-foreground transition-colors hover:text-foreground" id="n-login">Log in</a><Pill href="#how">Get started</Pill></>}
-          </div>
-        </div>
-      </header>
-
-      <main>
+    <AppFrame active="home" full>{access => {
+      const signedIn = !!access?.ok;
+      return (
+      <>
         <section className="land-hero" aria-labelledby="h1">
           <div className="land-grid" aria-hidden />
           <div className="land-copy enter">
             <h1 id="h1" style={{ ["--i" as string]: 0 }}>One login for every site and module</h1>
             <p style={{ ["--i" as string]: 1 }}>Production, exploration and head office data from every site, behind a single sign-in. Field entry keeps working with no signal.</p>
             <div className="flex flex-wrap items-center justify-center gap-3" style={{ ["--i" as string]: 2 }}>
-              <Pill href={signedIn ? "/portal/" : "/login/"}>{signedIn ? "Open portal" : "Start here"}</Pill>
-              <Pill href="#modules" dark={false}>Explore</Pill>
+              <Pill href={signedIn ? "/portal/" : "/login/"}>{signedIn ? "Open portal" : "Sign in"}</Pill>
+              <Pill href="#modules" dark={false}>See the modules</Pill>
             </div>
           </div>
 
@@ -180,24 +146,23 @@ export function Landing() {
 
         <section id="modules" className="land-sec" aria-labelledby="h-mod">
           <div className="land-wrap">
-            <h2 id="h-mod">Three modules, one sign-in</h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              {MODULES.map(m => {
+            <h2 id="h-mod">Where do you want to go?</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              {MODULES.map((m, i) => {
                 const Icon = m.icon;
                 const body = (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="land-ico"><Icon className="size-4" /></span>
-                      <span className={m.href ? "land-state land-state-on" : "land-state"}>{m.state}</span>
+                      <span className="land-ico lift-ico"><Icon className="size-4" /></span>
+                      <span className={/live/i.test(m.state) ? "land-state land-state-on" : "land-state land-state-wip"}>{m.state}</span>
                     </div>
                     <h3 className="font-serif text-2xl font-medium tracking-tight">{m.name}</h3>
                     <p className="text-sm leading-relaxed text-muted-foreground">{m.text}</p>
                     {m.href && <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-link">{m.cta}<ArrowRight className="size-4" /></span>}
                   </>
                 );
-                return m.href
-                  ? <a key={m.name} href={m.href} className="land-mod">{body}</a>
-                  : <div key={m.name} className="land-mod land-mod-off" aria-disabled>{body}</div>;
+                const span = i < 3 ? "lg:col-span-2" : "lg:col-span-3";
+                return <a key={m.name} href={m.href} className={"land-mod lift " + span} data-module-card={m.name}>{body}</a>;
               })}
             </div>
           </div>
@@ -213,7 +178,7 @@ export function Landing() {
                   <li key={code} className="land-site" data-site={code}>
                     <div className="flex items-center gap-2 font-semibold"><MapPin className="size-4 text-brand" aria-hidden />{code}</div>
                     <div className="text-xs text-muted-foreground">Exploration: <b className={s.explo ? "font-medium text-success" : "font-medium"}>{s.explo ? "Live" : "Planned"}</b></div>
-                    <div className="text-xs text-muted-foreground">Production: <b className="font-medium">{s.prod ? "Connected" : "Planned"}</b></div>
+                    <div className="text-xs text-muted-foreground">Production: <b className={s.prod ? "font-medium text-success" : "font-medium"}>{s.prod ? "Connected" : "Planned"}</b></div>
                   </li>
                 );
               })}
@@ -234,13 +199,12 @@ export function Landing() {
               ))}
             </ol>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Pill href={signedIn ? "/portal/" : "/login/"}>{signedIn ? "Open portal" : "Log in"}</Pill>
+              <Pill href={signedIn ? "/portal/" : "/login/"}>{signedIn ? "Open portal" : "Sign in"}</Pill>
             </div>
           </div>
         </section>
-      </main>
-
-      <footer className="border-t py-6 text-center text-xs text-muted-foreground">One Portal Data · PT Central Abadi Nusantara</footer>
-    </div>
+      </>
+      );
+    }}</AppFrame>
   );
 }

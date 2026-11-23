@@ -19,9 +19,9 @@ def mk(p, w=1360, h=900, init=None):
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)
     return b, pg, errs
 def login(pg):
-    pg.goto(BASE + '/explo/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_selector('#f'); pg.wait_for_timeout(1200)
+    pg.goto(BASE + '/login/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_url('**/portal/'); pg.wait_for_timeout(800)
 def open3d(pg):
-    pg.click('aside button[data-t=d3]'); pg.wait_for_selector('#d3-view', timeout=15000); pg.wait_for_timeout(1800)
+    pg.goto(BASE + '/exploration/3d-hole/'); pg.wait_for_selector('#d3-view', timeout=25000); pg.wait_for_timeout(1800)
 def shot(pg, sel):
     return pg.locator(sel).screenshot()
 def colours(png):
@@ -32,7 +32,8 @@ noh = "document.documentElement.scrollWidth<=document.documentElement.clientWidt
 
 with sync_playwright() as p:
     b, pg, errs = mk(p); login(pg)
-    check('3D Hole tab in the sidebar', pg.locator('aside button[data-t=d3]').count() == 1)
+    pg.goto(BASE + '/explo/?site=WKM'); pg.wait_for_selector('#f')
+    check('3D Hole is no longer a tab in Field Data Entry', pg.locator('aside button[data-t=d3]').count() == 0)
     open3d(pg)
     note = pg.inner_text('#d3-note')
     check('4 holes loaded', '4 holes' in note, note)
@@ -100,8 +101,7 @@ with sync_playwright() as p:
 
     # phone
     b, pg, errs = mk(p, 390, 800); login(pg)
-    pg.click('button[aria-label=Lainnya]'); pg.wait_for_timeout(400)
-    pg.click('[cmdk-item]:has-text("3D Hole")'); pg.wait_for_selector('#d3-view', timeout=15000); pg.wait_for_timeout(1800)
+    pg.goto(BASE + '/exploration/3d-hole/'); pg.wait_for_selector('#d3-view', timeout=25000); pg.wait_for_timeout(1800)
     check('phone: no horizontal scroll', pg.evaluate(noh))
     check('phone: scene visible', pg.locator('#d3-stage canvas, #d3-plan').count() >= 1)
     pg.screenshot(path=f'{SHOTS}/d3_phone.png', full_page=True)

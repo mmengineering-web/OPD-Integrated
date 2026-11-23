@@ -17,12 +17,17 @@ const FAQ: { q: string; a: string }[] = [
 export const HelpView = () => (
   <AppFrame active="help">{() => (
     <>
-      <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/portal/" }, { label: "Help" }]} />
-      <PageHead title="Help" lead="Sign-in, access, offline use and roles in plain terms." />
+      <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/" }, { label: "Help" }]} />
+      <PageHead title="Help" lead="Contacts, and sign-in, access, offline use and roles in plain terms." />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2" data-contacts>
+        <Card className="gap-1 p-4"><h2 className="text-base font-semibold">Accounts and access</h2><p className="text-sm text-muted-foreground">Ask a super admin to create your account or to add you to a site. Your site admin can tell you who that is.</p></Card>
+        <Card className="gap-1 p-4"><h2 className="text-base font-semibold">Problems with the portal</h2><p className="text-sm text-muted-foreground">Tell your site admin first. If the portal itself is at fault, send the page, what you tapped and the time to the OPD owner.</p></Card>
+      </div>
+      <h2 className="mb-3 font-serif text-xl font-medium">FAQ</h2>
       <Card className="gap-0 divide-y p-0" data-faq>
         {FAQ.map(({ q, a }) => (
           <details key={q} className="group px-4 py-3">
-            <summary className="cursor-pointer list-none text-sm font-medium marker:hidden [&::-webkit-details-marker]:hidden">{q}</summary>
+            <summary className="nudge cursor-pointer list-none text-sm font-medium marker:hidden [&::-webkit-details-marker]:hidden">{q}</summary>
             <p className="mt-2 text-sm text-muted-foreground">{a}</p>
           </details>
         ))}

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PROJECTS as REAL } from "../src/lib/opd/config.js";
-import { signInAll, buildPortalModel, safeNext, normalizeRole, canUseForm, classifyAuthError, unreachableProjects, hubRole, sessionKey, topRole, exploSites, pickExploSite, infoFromPortal } from "../src/lib/opd/auth-core.js";
+import { signInAll, buildPortalModel, safeNext, normalizeRole, canUseForm, classifyAuthError, unreachableProjects, hubRole, sessionKey, topRole, exploSites, pickExploSite, infoFromPortal, canOpen, usableProjects } from "../src/lib/opd/auth-core.js";
 import { readProfile } from "../src/lib/opd/profile.js";
 import { createFakeBackend, DEMO_USERS } from "./opd_fake.mjs";
 
@@ -139,4 +139,31 @@ test("infoFromPortal: permissions follow the portal role, forms limit carries ov
   const s = infoFromPortal("CDSM", "a@b.c", { role: "super_admin", forms: [] });
   assert.equal(s.can_super, true); assert.equal(s.can_admin, true); assert.equal(s.forms, null, "empty list = all forms");
   assert.equal(s.role_label, "Super admin");
+});
+
+// ---- Page access ----
+const acc = (projects) => ({ ok: true, name: "T", projects });
+test("canOpen: signed out never opens a page; 'any' needs only a sign-in", () => {
+  assert.equal(canOpen(PROJECTS, null, "any"), false);
+  assert.equal(canOpen(PROJECTS, { ok: false, projects: {} }, "any"), false);
+  assert.equal(canOpen(PROJECTS, acc({ "wkm-explo": { state: "ok", role: "viewer" } }), "any"), true);
+});
+
+test("canOpen: production pages need a usable production project, exploration pages a usable exploration project", () => {
+  const exploOnly = acc({ "wkm-explo": { state: "ok", role: "data_entry" }, "wkm-prod": { state: "invalid" }, "bm-prod": { state: "noprofile" } });
+  assert.equal(canOpen(PROJECTS, exploOnly, "exploration"), true);
+  assert.equal(canOpen(PROJECTS, exploOnly, "production"), false, "invalid / no profile does not count");
+  const prodOnly = acc({ "tms-prod": { state: "ok", role: "viewer" } });
+  assert.equal(canOpen(PROJECTS, prodOnly, "production"), true);
+  assert.equal(canOpen(PROJECTS, prodOnly, "exploration"), false);
+  const hub = acc({ "hub-prod": { state: "ok", role: "super_admin" } });
+  assert.equal(canOpen(PROJECTS, hub, "production"), true, "head office production counts");
+  assert.equal(canOpen(PROJECTS, acc({ "wkm-explo": { state: "inactive" } }), "any"), true, "'any' only asks for a sign-in");
+});
+
+test("usableProjects lists only usable projects of the module with their role", () => {
+  const a = acc({ "wkm-explo": { state: "ok", role: "site_admin" }, "cdsm-explo": { state: "invalid" }, "bm-prod": { state: "ok", role: "viewer" } });
+  assert.deepEqual(usableProjects(PROJECTS, a, "exploration").map((p) => [p.id, p.role]), [["wkm-explo", "site_admin"]]);
+  assert.deepEqual(usableProjects(PROJECTS, a, "production").map((p) => p.id), ["bm-prod"]);
+  assert.equal(usableProjects(PROJECTS, a, "any").length, 2);
 });

@@ -15,10 +15,16 @@ def mk(p, w=1360, h=900, role=None):
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)
     return b, pg, errs
+OPD = {'dash': '/exploration/dashboard/', 'qc': '/exploration/data-qc/', 'map': '/exploration/maps/', 'd3': '/exploration/3d-hole/'}
 def login(pg):
-    pg.goto(BASE + '/explo/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_selector('#f'); pg.wait_for_timeout(1500)
+    # The analysis pages live in the OPD Exploration section and use the portal session.
+    pg.goto(BASE + '/login/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_url('**/portal/'); pg.wait_for_timeout(800)
 def go(pg, t, sel):
-    pg.click(f'aside button[data-t={t}]'); pg.wait_for_selector(sel, timeout=15000); pg.wait_for_timeout(1500)
+    if t in OPD:
+        pg.goto(BASE + OPD[t]); pg.wait_for_selector(sel, timeout=25000)
+    else:
+        pg.goto(BASE + '/explo/?site=WKM'); pg.wait_for_selector('#f'); pg.click(f'aside button[data-t={t}]'); pg.wait_for_selector(sel, timeout=15000)
+    pg.wait_for_timeout(1500)
 noh = "document.documentElement.scrollWidth<=document.documentElement.clientWidth"
 
 with sync_playwright() as p:
@@ -141,8 +147,7 @@ with sync_playwright() as p:
     pg.screenshot(path=f'{SHOTS}/params_d.png', full_page=True); b.close()
     # ---- phone
     b, pg, errs = mk(p, 390, 800); login(pg)
-    pg.click('button[aria-label=Lainnya]'); pg.wait_for_timeout(400)
-    pg.click('[cmdk-item]:has-text("Dashboard")'); pg.wait_for_selector('#dash', timeout=15000); pg.wait_for_timeout(1500)
+    pg.goto(BASE + '/exploration/dashboard/'); pg.wait_for_selector('#dash', timeout=25000); pg.wait_for_timeout(1500)
     check('phone dashboard no h-scroll', pg.evaluate(noh))
     pg.screenshot(path=f'{SHOTS}/dash_phone.png', full_page=True)
     check('phone no console errors', not errs, errs[:3]); b.close()

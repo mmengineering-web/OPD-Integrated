@@ -1,12 +1,17 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { LogIn, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/ui-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { maskEmail } from "@/lib/opd/masks.js";
+import { Strata, Contours } from "@/components/opd/strata";
+import { SECTIONS } from "@/lib/opd/sitemap";
 import { BrandMark } from "@/components/brand-mark";
 import { Breadcrumb } from "@/components/opd/breadcrumb";
+import { SitePicker } from "@/components/site-picker";
+import { SITES } from "@/lib/core/config.js";
 import { safeNext } from "@/lib/opd/auth-core.js";
 import { loadAccess, loginAll } from "@/lib/opd/session.js";
 
@@ -16,14 +21,13 @@ export function OpdLogin() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [online, setOnline] = useState(true);
-  const [svg, setSvg] = useState("");
-  const hero = useRef<HTMLDivElement>(null);
+  const [guestOpen, setGuestOpen] = useState(false);
+  const [gsite, setGsite] = useState("");
   const { theme, toggle } = useTheme();
   const nextPath = () => safeNext(new URLSearchParams(location.search).get("next"), "/portal/");
 
   useEffect(() => {
     if (loadAccess()?.ok) { location.replace(nextPath()); return; }
-    import("@/lib/core/brand.js").then(b => setSvg(b.strataHero()));
     setOnline(navigator.onLine);
     const on = () => setOnline(true), off = () => setOnline(false);
     window.addEventListener("online", on); window.addEventListener("offline", off);
@@ -50,38 +54,68 @@ export function OpdLogin() {
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-hero" ref={hero}>
-        <Breadcrumb tone="light" className="absolute left-4 top-[calc(var(--safe-t)+1rem)] z-[2]" items={[{ label: "Home", href: "/" }, { label: "Log in" }]} />
-        <div dangerouslySetInnerHTML={{ __html: svg }} />
-        <div className="hero-copy">
-          <h2 style={{ ["--i" as string]: 0 }}>One login for every site and module.</h2>
-          <p style={{ ["--i" as string]: 1 }}>Production, exploration and head office data, from one place.</p>
+    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,34rem)_1fr]" data-login="opd">
+      <div className="flex flex-col gap-6 px-5 pb-10 pt-[calc(var(--safe-t)+1.25rem)] sm:px-10">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign in" }]} />
+        <div className="mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center gap-8 py-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <BrandMark className="size-11" />
+              <div><h1 className="font-serif text-2xl font-medium leading-tight">One Portal Data</h1><p className="text-sm text-muted-foreground">PT Central Abadi Nusantara</p></div>
+            </div>
+            <p className="text-sm text-muted-foreground">Sign in once. The same email and password open every site and module you have an account for.</p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {!online && <div className="rounded-md border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-sm text-warning">Offline. Sign-in needs internet, but exploration entry works without signing in.</div>}
+            <form onSubmit={submit} className="flex flex-col gap-4" id="lf">
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col gap-1.5 text-sm font-medium"><span>Email</span>
+                  <MaskedInput id="l-email" type="email" mask={maskEmail} autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next" placeholder="name@company.com" required value={email} onValueChange={setEmail} /></label>
+                <label className="flex flex-col gap-1.5 text-sm font-medium"><span>Password</span>
+                  <Input id="l-pw" type="password" autoComplete="current-password" enterKeyHint="go" required value={pw} onChange={e => setPw(e.target.value)} /></label>
+              </div>
+              {msg && <div role="alert" className="rounded-md border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-danger" id="l-msg">{msg}</div>}
+              <Button type="submit" size="lg" className="w-full" disabled={busy || !online} id="l-go"><LogIn />{busy ? "Signing in…" : "Sign in"}</Button>
+            </form>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t pt-6">
+            <Button type="button" variant="outline" className="h-auto min-h-9 w-full whitespace-normal py-2 text-center" id="l-guest" aria-expanded={guestOpen} aria-controls="guest-panel" onClick={() => setGuestOpen(o => !o)}>
+              Enter data offline, without signing in
+            </Button>
+            {guestOpen && (
+              <div id="guest-panel" className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+                <SitePicker name="guest-site" sites={Object.keys(SITES)} value={gsite} onChange={setGsite} connected={k => !!(SITES as Record<string, { url: string }>)[k].url}
+                  legend="Which site is this data for?" hint="Pick it before you start. Records are saved on this phone and sent to this site after you sign in." />
+                <Button type="button" size="lg" className="w-full" disabled={!gsite} id="l-guest-go"
+                  onClick={() => { try { localStorage.setItem("exp_guest_site", gsite); localStorage.setItem("exp_last_site", gsite); } catch {} location.assign(`/explo/?site=${gsite}`); }}>
+                  {gsite ? `Open data entry for ${gsite}` : "Pick a site to continue"}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">No account yet? Ask a super admin.</span>
+            <Button type="button" variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">{theme === "dark" ? <Sun /> : <Moon />}</Button></div>
         </div>
       </div>
-      <div className="login-pane">
-        <Card className="login w-full max-w-[26rem]">
-          <div className="flex items-center gap-3">
-            <BrandMark className="size-[2.6rem]" />
-            <div><h1 className="text-lg font-semibold leading-tight">One Portal Data</h1><p className="text-sm text-muted-foreground">PT Central Abadi Nusantara</p></div>
-          </div>
-          {!online && <div className="rounded-md border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-sm text-warning">Offline. Sign-in needs internet, but exploration entry works without signing in.</div>}
-          <form onSubmit={submit} className="flex flex-col gap-4" id="lf">
-            <label className="flex flex-col gap-1.5 text-sm font-medium"><span>Email</span>
-              <Input id="l-email" type="email" autoComplete="username" inputMode="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium"><span>Password</span>
-              <Input id="l-pw" type="password" autoComplete="current-password" required value={pw} onChange={e => setPw(e.target.value)} /></label>
-            {msg && <div role="alert" className="rounded-md border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-sm text-danger" id="l-msg">{msg}</div>}
-            <Button type="submit" size="lg" className="w-full" disabled={busy || !online} id="l-go"><LogIn />{busy ? "Signing in…" : "Sign in"}</Button>
-          </form>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
-          <Button type="button" variant="outline" className="h-auto min-h-9 w-full whitespace-normal py-2 text-center" id="l-guest" onClick={() => location.assign("/explo/")}>
-            Exploration entry without signing in (offline)
-          </Button>
-          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Same email and password for every project</span>
-            <Button type="button" variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">{theme === "dark" ? <Sun /> : <Moon />}</Button></div>
-        </Card>
-      </div>
+
+      <aside className="relative isolate hidden overflow-hidden bg-[var(--strata-1)] text-[#fff6ee] lg:flex lg:flex-col lg:justify-between lg:p-12" aria-label="What you can open after signing in">
+        <Contours className="absolute -right-16 -top-10 -z-10 w-[40rem] !text-[#fff6ee]/15" />
+        <Strata className="absolute inset-x-0 bottom-0 -z-10 h-56 w-full opacity-90" />
+        <div className="max-w-[30rem]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#fdba74]">Portal</p>
+          <h2 className="mt-3 font-serif text-4xl font-medium leading-tight">Every site and module, behind one door.</h2>
+        </div>
+        <ul className="relative z-[1] mb-24 grid max-w-[30rem] gap-2">
+          {SECTIONS.filter(x => x.key !== "home" && x.key !== "help").map(x => { const I = x.icon; return (
+            <li key={x.key} className="flex items-center gap-3 rounded-lg border border-white/15 bg-black/15 px-4 py-3 backdrop-blur-sm">
+              <I className="size-5 text-[#fdba74]" aria-hidden /><span className="text-sm font-medium">{x.label}</span>
+              <span className="ml-auto text-xs text-[#fff6ee]/70">{x.items.length - 1} {x.items.length === 2 ? "page" : "pages"}</span>
+            </li>); })}
+        </ul>
+      </aside>
     </div>
   );
 }

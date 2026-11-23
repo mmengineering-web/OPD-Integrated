@@ -17,7 +17,7 @@ def mk(p, w=1360, h=900, scheme='light', reduced='no-preference'):
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)
     return b, pg, errs
 def login(pg):
-    pg.goto(BASE + '/explo/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_selector('#f')
+    pg.goto(BASE + '/login/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'good'); pg.click('#l-go'); pg.wait_for_url('**/portal/'); pg.goto(BASE + '/explo/'); pg.wait_for_selector('#f')
 noh = "document.documentElement.scrollWidth<=document.documentElement.clientWidth"
 
 with sync_playwright() as p:
@@ -27,8 +27,8 @@ with sync_playwright() as p:
         check(name + ' no horizontal overflow', pg.evaluate(noh)); check(name + ' no errors', not errs, errs); b.close()
 
     # wrong password shows an error and stays on login
-    b, pg, errs = mk(p); pg.goto(BASE + '/explo/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'bad'); pg.click('#l-go'); pg.wait_for_selector('#l-msg')
-    check('wrong password message', 'Invalid' in pg.inner_text('#l-msg')); b.close()
+    b, pg, errs = mk(p); pg.goto(BASE + '/login/'); pg.wait_for_selector('#lf'); pg.fill('#l-email', 'geo@x'); pg.fill('#l-pw', 'bad'); pg.click('#l-go'); pg.wait_for_selector('#l-msg')
+    check('wrong password message', 'Invalid' in pg.inner_text('#l-msg') or 'wrong' in pg.inner_text('#l-msg').lower()); b.close()
 
     # logged in, desktop
     b, pg, errs = mk(p); login(pg); pg.wait_for_timeout(2500)
@@ -76,7 +76,7 @@ with sync_playwright() as p:
     check('palette closed', pg.locator('[cmdk-input]').count() == 0)
     pg.keyboard.press('Control+k'); pg.wait_for_selector('[cmdk-input]'); pg.keyboard.press('Escape'); pg.wait_for_timeout(250)
     check('Esc closes palette', pg.locator('[cmdk-input]').count() == 0)
-    pg.click('header button[aria-label="Ganti tema"]'); pg.wait_for_timeout(200)
+    pg.click('header button[aria-label="Toggle theme"]'); pg.wait_for_timeout(200)
     check('theme toggles', pg.evaluate("document.documentElement.dataset.theme") == 'dark')
     check('desktop no overflow', pg.evaluate(noh)); check('no JS errors (desktop)', not errs, errs); b.close()
 

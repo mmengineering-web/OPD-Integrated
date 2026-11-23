@@ -5,7 +5,7 @@ One installable web app (PWA) for a mining company: **one login** for production
 - Live: https://opd-integrated.vercel.app
 - Repo: https://github.com/mmengineering-web/OPD-Integrated
 - Owner: Gera. Portfolio project (non-commercial), but built to be fully functional.
-- Last updated: 20 Nov 2026 (Phase 2 built)
+- Last updated: 20 Nov 2026
 
 > **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a password or a `.env` with secrets.
 
@@ -89,12 +89,28 @@ Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px 
 | `/login/` | OPD login | One email and password. Returns to `/portal/` by default. `?next=` accepts same-origin paths only. |
 | `/portal/` | Signed-in home | Module and site tiles. Signed out, it redirects to `/login/?next=/portal/`. |
 | `/explo/` | Exploration app | `?site=WKM` preselects the site. Guest mode available. |
-| `/production/` | Production | Access per site; upload arrives in Phase 4. |
-| `/documents/` | Documents | Shelves layout; document store arrives in Phase 5. |
-| `/tools/` | Mining Tools | Working calculators: UTM and lat/lon, volume to wet and dry tonnes. |
-| `/help/` | Help | FAQ: accounts, greyed modules, offline use, roles, sign-out. |
+| `/production/` | Production hub (public landing) | Cards: Dashboard, Uploads, Guides. |
+| `/production/dashboard/`, `/production/data-inputs/`, `/production/guidelines/` | Production data pages | Login + a usable production account. Placeholders until Phase 4. |
+| `/exploration/` | Exploration hub (public landing) | Cards: Field Data Entry (`/explo/`), Request Data, Interactive Maps. |
+| `/exploration/request-data/`, `/exploration/maps/` | Exploration data pages | Login + a usable exploration account. |
+| `/documents/` | Documents hub (public landing) | Cards: Reports, SOPs, Templates. |
+| `/documents/reports/`, `/documents/sops/`, `/documents/templates/` | Document pages | Login (any account). Placeholders until Phase 5. |
+| `/tools/` | Tools hub (public landing) | Calculators and HPM Nickel open now; Drillhole Analysis, Hauling Cost, Revenue Projection planned. |
+| `/portal/admin/` | User administration | Super admins only. Matrix of people by project, add, manage and delete. Logic in `src/lib/opd/admin-core.js` (unit tested), calls in `admin-api.js`. Needs the Edge Function and SQL in `supabase/`; setup per project is in `docs/SUPERADMIN_SETUP.md`. |
+| `/production/dashboard/` | All-sites dashboard | Looker Studio reports (Production, Management). Opens only for accounts with a usable Hub production project (`hub-prod`). |
+| `/tools/hpm-nickel/` | HPM Nickel Calculator | Public. Kepmen ESDM 363.K/2026. Logic in `src/lib/core/hpm.js` (unit tested). Reads HMA prices from the public Google Sheet, falls back to a built-in table offline. PDF via the vendored jsPDF. |
+| `/tools/calculators/` | Calculators | Public: UTM and lat/lon, volume to wet and dry tonnes. |
+| `/help/` | Help (public) | Contacts and FAQ. |
 
-Signed-in pages share one menu (`AppFrame` and `AppNav` in `src/components/opd/app-frame.tsx`): **Home** (`/portal/`), **Production**, **Exploration**, **Documents**, **Mining Tools**, **Help**. Signed out, each page redirects to `/login/?next=<page>`.
+**Menu.** Every page shares one menu: Home, Production, Exploration, Documents, Tools, Help (`AppFrame` and `AppNav` in `src/components/opd/app-frame.tsx`). Each item opens a public landing page; nobody is asked to log in just to look.
+
+**Layout.** Every page, including Home and the Exploration data-entry app, renders inside one shell (`src/components/opd/shell.tsx`): a floating, rounded sidebar with a profile block, tile icons, nested pages and an offline notice (full tree on desktop, icon rail when collapsed; the toggle is in the top bar and is remembered in `opd_side`; a drawer on phones, Escape closes it) and breadcrumbs. There is no top menu: the sidebar is the navigation, and the top bar holds the toggle, theme and account. Pages are listed once, in `src/lib/opd/sitemap.tsx`; the menu and sidebar both read it. A lock marks pages your accounts cannot open. The login page has breadcrumbs only. Opening Field Data Entry while signed out skips any login: it shows the site picker and "Start offline data entry", with an optional link to the OPD login. Home links to Exploration, Production, Documents, Tools and Portal. A search button in the top bar (Ctrl/Cmd+K) jumps to any page by typing or scrolling; Pages reveal block by block as you scroll and a page wipe plays between pages (both off for reduced motion). UI rules are in `docs/UX_RULES.md`. Hover and press effects live in `globals.css` (`lift`, `tap`, `nudge`, `skeleton`) and respect reduced motion. To add a page, add it to the sitemap and create its route.
+
+**Guest entry.** "Exploration entry without signing in" on the OPD login asks for the site first (cards, nothing preselected), stores `exp_guest_site`, and opens `/explo/?site=<SITE>` straight in data entry, with the site shown in the header and an offline strip ("Salah site? Ganti site"). The Exploration login uses the same site cards and remembers the last site (`exp_last_site`).
+
+**Analysis pages.** Dashboard, Data QC, Interactive Maps and 3D Hole are OPD pages under Exploration (`/exploration/dashboard/`, `/data-qc/`, `/maps/`, `/3d-hole/`), not tabs of Field Data Entry. Each needs an exploration account, shows a site picker with only the sites that account can open, attaches that site's portal session (`attachSession`) and renders the same view components. Field Data Entry keeps Input, Data and Settings tabs.
+
+**Page access.** A page that shows data is wrapped in `AppFrame gate="production" | "exploration" | "any"`. Signed out, it goes to the OPD login (`/login/?next=<page>`, never the Exploration login) and returns after sign-in. Signed in, `canOpen()` in `auth-core.js` checks the person's accounts; if none qualifies the page shows "You don't have access to this page". `any` = signed in with at least one usable account; `production` / `exploration` = a usable project of that module (head office or a site).
 
 Flow: **Home → Log in → Portal → Exploration (or Production)**. Breadcrumbs show the path (Home › Log in, Home › Portal). Sign-out lands on `/`.
 
@@ -167,14 +183,7 @@ OPD uses **credential fan-out**, not federated SSO. The same email and password 
 
 ### Phase 2 (Exploration on the portal session)
 
-Implemented:
-
-1. `attachSession(site, rec)` in `src/lib/core/sync.js`: reads the `sb-exp-<SITE>` session the portal login already stored, builds the Exploration client and info with no second login. Offline it reuses the cached `exp_session`; if the profile cannot be read it derives permissions from the portal role (`infoFromPortal`) and the next sync corrects them. The local database and the client are swapped in one synchronous step, so one site's outbox can never be sent to another site.
-2. `AppShell` order: portal session (`exploSites` + `pickExploSite`: `?site=`, then last session, then guest site, then first allowed) → old Exploration login or guest mode → login screen. The login screen gained **Masuk lewat One Portal** (`/login/?next=/explo/?site=<SITE>`).
-3. Site switcher in the Exploration header (shown when the portal allows more than one site): re-attaches the other site and opens its Dexie database.
-4. Portal sign-out (`logoutAll`) also runs `purgeServerData()` on every Exploration database on the phone (`purgeExplorationData`) and clears the legacy keys. Outbox records and reference data stay. In Exploration on the portal session, **Keluar dari Portal** does the same and lands on `/`.
-5. Portal › Exploration › site breadcrumb above the Exploration content.
-6. No Dexie version above 5.
+Built: `attachSession` (portal session, no second login, offline-safe), site switcher, portal sign-out purges Exploration server data, Portal › Exploration breadcrumb, Dexie stays at 5. See `src/lib/core/sync.js`, `src/components/app-shell.tsx`, `src/lib/opd/session.js`.
 
 ---
 

@@ -22,12 +22,9 @@ import { ReportView } from "./report-view";
 import { DataRecords } from "./data-records";
 import { ImportView } from "./import-view";
 import { AdminView } from "./admin-view";
-import { DashboardView } from "./dashboard-view";
-import { QcView } from "./qc-view";
-import { MapView } from "./map-view";
-import { Drill3dView } from "./drill3d-view";
 import { Breadcrumb } from "./opd/breadcrumb";
-import { AppNav } from "./opd/app-frame";
+import { Shell, type SideExtra } from "./opd/shell";
+import { PageSkeleton } from "./opd/app-frame";
 import { PROJECTS } from "@/lib/opd/config.js";
 import { exploSites, pickExploSite } from "@/lib/opd/auth-core.js";
 import { loadAccess, logoutAll } from "@/lib/opd/session.js";
@@ -96,12 +93,14 @@ export function AppShell() {
   // One login, one logout: leaving Exploration on the portal session signs out of every project and clears server data on this phone.
   const portalLogout = useCallback(async () => { await logoutAll(); location.replace("/"); }, []);
 
-  if (info === undefined) return <div className="grid min-h-dvh place-items-center text-sm text-muted-foreground" aria-busy>Memuat…</div>;
+  if (info === undefined) return <PageSkeleton />;
   return (
     <ToastProvider><ConfirmProvider>
       <UpdateWatcher />
       {info ? <Main key={info.site} info={info} sites={sites} onSwitch={switchSite} onPortalLogout={portalLogout} onLogout={() => setInfo(null)} />
-        : <Login onDone={setInfo} initialSite={typeof location !== "undefined" ? new URLSearchParams(location.search).get("site")?.toUpperCase() : null} />}
+        : <Shell active="explo" access={loadAccess()} account={null} path="/explo/">
+            <Login onDone={setInfo} initialSite={typeof location !== "undefined" ? new URLSearchParams(location.search).get("site")?.toUpperCase() : null} />
+          </Shell>}
     </ConfirmProvider></ToastProvider>
   );
 }
@@ -154,74 +153,28 @@ function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info;
     : st.syncing ? { t: "mengirim…", s: "kirim…", c: "text-info border-[var(--info-border)] bg-[var(--info-bg)]", i: "RefreshCw" }
     : { t: `online · ${st.pending} pending`, s: st.pending ? `${st.pending} pending` : "online", c: "text-success border-[var(--success-border)] bg-[var(--success-bg)]", i: "Wifi" };
 
+  const access = useMemo(() => { const a = loadAccess(); return a?.ok ? a : null; }, []);
+  const account = {
+    label: `${info.name} · ${info.role_label}`, signOut: logout, portal: onPortal,
+    signOutLabel: info.guest ? "Login" : onPortal ? "Sign out" : "Keluar",
+  };
+  const sideExtra: SideExtra = ({ collapsed }) => groups.map(([g, items]) => (
+    <div key={g} className="flex flex-col gap-0.5">
+      {!collapsed && <div className="px-2 pb-0.5 pt-2 text-[.6875rem] font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>}
+      {items.map(t => (
+        <button key={t.key} data-t={t.key} aria-current={t.key === tab ? "page" : undefined} onClick={() => go(t.key)} title={t.label} aria-label={t.label}
+          className={cn("nudge relative flex items-center rounded-md text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground", collapsed ? "size-10 justify-center" : "min-h-9 gap-2.5 px-2.5", t.key === tab && "bg-accent font-medium text-foreground")}>
+          <Ico name={t.icon} className={cn("size-4 shrink-0", t.key === tab && "text-brand")} />{!collapsed && t.label}
+        </button>
+      ))}
+    </div>
+  ));
+
   return (
-    <div className="min-h-dvh lg:pl-[var(--side-w)]">
-      {/* sidebar (desktop) */}
-      <aside className="fixed inset-y-0 left-0 z-[20] hidden w-[var(--side-w)] flex-col gap-1 overflow-y-auto border-r bg-card p-3 lg:flex" aria-label="Navigasi">
-        <div className="flex items-center gap-3 px-2 pb-4 pt-1"><BrandMark /><div><div className="text-[.9375rem] font-semibold leading-tight">Explo Entry</div><div className="text-xs text-muted-foreground">{info.site}</div></div></div>
-        {groups.map(([g, items]) => (
-          <div key={g} className="flex flex-col gap-0.5">
-            <div className="px-2 pb-1 pt-3 text-[.6875rem] font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>
-            {items.map(t => (
-              <button key={t.key} data-t={t.key} aria-current={t.key === tab ? "page" : undefined} onClick={() => go(t.key)}
-                className={cn("relative flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground", t.key === tab && "bg-accent font-semibold text-foreground")}>
-                {t.key === tab && <motion.span layoutId="nav-mark" className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary" />}
-                <Ico name={t.icon} className={cn("size-4", t.key === tab && "text-brand")} />{t.label}
-              </button>
-            ))}
-          </div>
-        ))}
-        <div className="mt-auto flex flex-col gap-2 border-t pt-3">
-          <div className="flex items-center gap-2 px-1"><span className="grid size-8 place-items-center rounded-full bg-muted text-xs font-semibold">{(info.name || "?").slice(0, 2).toUpperCase()}</span>
-            <div className="min-w-0 text-sm leading-tight"><div className="truncate font-medium">{info.name}</div><div className="truncate text-xs text-muted-foreground">{info.site} · {info.role_label}</div></div></div>
-          <Button variant="outline" size="sm" onClick={logout}><LogOut />{info.guest ? "Ke halaman login" : onPortal ? "Keluar dari Portal" : "Keluar"}</Button>
-        </div>
-      </aside>
-
-      {/* top bar */}
-      <header className="sticky top-0 z-[20] flex h-[var(--topbar-h)] items-center gap-3 border-b bg-[color-mix(in_srgb,var(--card)_92%,transparent)] px-4 backdrop-blur" style={{ paddingTop: "var(--safe-t)" }}>
-        <span className="absolute inset-x-0 -bottom-px h-0.5 origin-left bg-[image:var(--strata-stripe)] [animation:m-stripe_var(--dur-4)_var(--ease-out)_both]" />
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden"><BrandMark className="size-8 shrink-0" /><div className="min-w-0 text-sm leading-tight"><div className="truncate font-semibold">{info.site}</div><div className="truncate text-xs text-muted-foreground">{info.name}</div></div></div>
-        <h1 className="hidden text-base font-semibold lg:block">{cur?.label}</h1>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          {onPortal && sites.length > 1 && (
-            <select id="site-switch" value={info.site} aria-label="Ganti site" className="h-8 rounded-md border bg-card px-2 text-xs font-medium"
-              onChange={async e => { const ok = await onSwitch(e.target.value); if (!ok) toast("Tidak bisa membuka site itu. Masuk ulang lewat One Portal."); }}>
-              {sites.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          )}
-          <motion.span key={chipKey} initial={{ scale: 0.92, opacity: 0.6 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 500, damping: 22 }}
-            className={cn("mr-1 inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-medium", chip.c)} id="sync-chip"><Ico name={chip.i} className={cn("size-3", st.syncing && "animate-spin")} /><span className="sm:hidden">{chip.s}</span><span className="hidden sm:inline">{chip.t}</span></motion.span>
-          <Button variant="ghost" size="sm" onClick={() => setPal(true)} aria-label="Cari atau buka perintah" id="b-pal"><Search /><kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[.6875rem] text-muted-foreground sm:inline">Ctrl K</kbd></Button>
-          {!info.guest && <Button variant="ghost" size="icon" onClick={() => core().then(c => c.S.syncNow())} aria-label="Sync sekarang"><RefreshCw /></Button>}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Ganti tema">{theme === "dark" ? <Sun /> : <Moon />}</Button>
-        </div>
-      </header>
-
-      {/* content */}
-      <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-[calc(var(--tabbar-h)+var(--safe-b)+1.5rem)] pt-5 lg:pb-10">
-        {onPortal && <AppNav active="explo" className="mb-3" />}
-        {onPortal && <Breadcrumb className="mb-3" items={[{ label: "Portal", href: "/portal/" }, { label: "Exploration" }, { label: info.site }]} />}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }} data-tab={tab} id="view">
-            {tab === "progress" ? <ProgressForm info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "collars" ? <CollarForm info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "hours" ? <HoursForm info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "samples" ? <SampleForm info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "import" ? <ImportView info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "admin" ? <AdminView info={info} />
-              : tab === "map" ? <MapView info={info} />
-              : tab === "d3" ? <Drill3dView info={info} />
-              : tab === "qc" ? <QcView info={info} />
-              : tab === "dash" ? <DashboardView info={info} />
-              : tab === "report" ? <ReportView info={info} tick={`${st.last}-${st.pending}`} />
-              : tab === "list" ? <DataRecords info={info} tick={`${st.last}-${st.pending}`} go={go} />
-              : <Soon label={cur?.label ?? ""} />}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* tab bar (phone) */}
+    <>
+      <Shell active="explo" access={access} account={account} path="/explo/" sideExtra={sideExtra}
+        mainClass="pb-[calc(var(--tabbar-h)+var(--safe-b)+1.5rem)] lg:pb-10"
+        mobileBar={
       <nav className="fixed inset-x-0 bottom-0 z-[20] flex h-[calc(var(--tabbar-h)+var(--safe-b))] items-stretch border-t bg-card pb-[var(--safe-b)] lg:hidden" aria-label="Tab">
         {tabs.slice(0, 4).map(t => (
           <button key={t.key} onClick={() => go(t.key)} aria-current={t.key === tab ? "page" : undefined} aria-label={t.label}
@@ -234,6 +187,43 @@ function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info;
           <span className="grid h-7 w-12 place-items-center rounded-full"><Ellipsis className="size-5" /></span>Lainnya
         </button>
       </nav>
+        }
+        headerExtra={<>
+          {!(onPortal && sites.length > 1) && <span id="site-chip" className="mr-1 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 font-mono text-xs font-semibold text-primary-foreground" title="Site tujuan data"><MapPin className="size-3" aria-hidden />{info.site}</span>}
+          {onPortal && sites.length > 1 && (
+            <select id="site-switch" value={info.site} aria-label="Ganti site" className="h-8 rounded-md border bg-card px-2 text-xs font-medium"
+              onChange={async e => { const ok = await onSwitch(e.target.value); if (!ok) toast("Tidak bisa membuka site itu. Masuk ulang lewat One Portal."); }}>
+              {sites.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          <motion.span key={chipKey} initial={{ scale: 0.92, opacity: 0.6 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 500, damping: 22 }}
+            className={cn("mr-1 inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-medium", chip.c)} id="sync-chip"><Ico name={chip.i} className={cn("size-3", st.syncing && "animate-spin")} /><span className="sm:hidden">{chip.s}</span><span className="hidden sm:inline">{chip.t}</span></motion.span>
+          <Button variant="ghost" size="sm" onClick={() => setPal(true)} aria-label="Cari atau buka perintah" id="b-pal"><Search /><kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[.6875rem] text-muted-foreground sm:inline">Ctrl K</kbd></Button>
+          {!info.guest && <Button variant="ghost" size="icon" onClick={() => core().then(c => c.S.syncNow())} aria-label="Sync sekarang"><RefreshCw /></Button>}
+        </>}>
+        <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/" }, { label: "Exploration", href: "/exploration/" }, { label: "Data Entry", href: undefined }, { label: cur?.label ?? info.site }]} />
+        {info.guest && (
+          <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3 text-sm text-warning" id="guest-strip" role="status">
+            <span>Mode offline. Data ini disimpan untuk site <b className="font-mono">{info.site}</b> dan terkirim setelah Anda login.</span>
+            <Button variant="outline" size="sm" className="ml-auto" onClick={logout} id="b-change-site">Salah site? Ganti site</Button>
+          </div>
+        )}
+        <div className="mb-4 flex flex-wrap items-baseline gap-x-3"><h1 className="font-serif text-2xl font-medium tracking-tight">{cur?.label}</h1><span className="font-mono text-xs text-muted-foreground">{info.site}</span></div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }} data-tab={tab} id="view">
+            {tab === "progress" ? <ProgressForm info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "collars" ? <CollarForm info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "hours" ? <HoursForm info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "samples" ? <SampleForm info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "import" ? <ImportView info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "admin" ? <AdminView info={info} />
+              : tab === "report" ? <ReportView info={info} tick={`${st.last}-${st.pending}`} />
+              : tab === "list" ? <DataRecords info={info} tick={`${st.last}-${st.pending}`} go={go} />
+              : <Soon label={cur?.label ?? ""} />}
+          </motion.div>
+        </AnimatePresence>
+      </Shell>
+
 
       <CommandDialog open={pal} onOpenChange={setPal}>
         <CommandInput placeholder="Cari tab atau perintah…" />
@@ -251,6 +241,6 @@ function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info;
           </CommandGroup>
         </CommandList>
       </CommandDialog>
-    </div>
+    </>
   );
 }

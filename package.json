@@ -7,7 +7,7 @@
     "build": "next build && node scripts/make-sw.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test:unit": "node --no-warnings tests/opd_auth.test.mjs && node --no-warnings tests/rules.test.mjs && node --no-warnings tests/roa_qc.test.mjs && node --no-warnings tests/calc.test.mjs && node --no-warnings tests/geo3d.test.mjs",
+    "test:unit": "node --no-warnings tests/opd_auth.test.mjs && node --no-warnings tests/rules.test.mjs && node --no-warnings tests/roa_qc.test.mjs && node --no-warnings tests/calc.test.mjs && node --no-warnings tests/geo3d.test.mjs && node --no-warnings tests/hpm.test.mjs && node --no-warnings tests/admin.test.mjs && node --no-warnings tests/masks.test.mjs",
     "build:test": "EXP_STUB=1 next build && EXP_STUB=1 node scripts/make-sw.mjs"
   },
   "dependencies": {

@@ -1,15 +1,19 @@
 "use client";
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Input, Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { Field, FormGroup } from "@/components/ui/form-group";
 import { Breadcrumb } from "@/components/opd/breadcrumb";
 import { AppFrame, PageHead } from "@/components/opd/app-frame";
 import { utmToLatLon, latLonToUtm, zoneOf } from "@/lib/core/utm.js";
+import { maskDecimal, maskEasting, maskLat, maskLon, maskNorthing, maskPercent, maskZone } from "@/lib/opd/masks.js";
 
 const num = (v: string) => (v.trim() === "" ? NaN : Number(v.replace(",", ".")));
 const f = (n: number, d: number) => (Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }) : "–");
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => <label className="flex flex-col gap-1.5 text-sm font-medium"><span>{label}</span>{children}</label>;
 const Out = ({ label, value, id }: { label: string; value: string; id?: string }) => <div className="rounded-md border bg-muted/40 px-3 py-2"><div className="text-xs text-muted-foreground">{label}</div><div className="text-base font-semibold tabular-nums" id={id}>{value}</div></div>;
+const maskVolume = (v: string) => maskDecimal(v, { int: 9, dec: 2 });
+const maskDensity = (v: string) => maskDecimal(v, { int: 2, dec: 3 });
 
 function Utm() {
   const [dir, setDir] = useState<"u2l" | "l2u">("u2l");
@@ -22,22 +26,32 @@ function Utm() {
     const p = latLonToUtm(x, y, zz, hemi); return { l1: `Easting (zone ${zz})`, v1: f(p.e, 1), l2: "Northing", v2: f(p.n, 1) };
   }, [a, b, zone, hemi, dir]);
   return (
-    <Card data-tool="utm">
+    <Card data-tool="utm" className="gap-5">
       <h2 className="text-base font-semibold">UTM and latitude/longitude (WGS84)</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Direction"><Select value={dir} onChange={e => setDir(e.target.value as "u2l" | "l2u")} id="utm-dir"><option value="u2l">UTM to lat/lon</option><option value="l2u">Lat/lon to UTM</option></Select></Field>
+      <Field label="Convert"><Select value={dir} onChange={e => setDir(e.target.value as "u2l" | "l2u")} id="utm-dir"><option value="u2l">UTM to lat/lon</option><option value="l2u">Lat/lon to UTM</option></Select></Field>
+      <FormGroup legend="Zone" hint={dir === "l2u" ? "Optional. Leave it empty to use the zone of the longitude." : "1 to 60. Indonesia is 46 to 54."}>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Zone"><Input inputMode="numeric" value={zone} onChange={e => setZone(e.target.value)} id="utm-zone" /></Field>
+          <Field label="Zone number"><MaskedInput mask={maskZone} inputMode="numeric" placeholder="e.g. 51" value={zone} onValueChange={setZone} id="utm-zone" /></Field>
           <Field label="Hemisphere"><Select value={hemi} onChange={e => setHemi(e.target.value)}><option value="S">South</option><option value="N">North</option></Select></Field>
         </div>
-        <Field label={dir === "u2l" ? "Easting (m)" : "Latitude"}><Input inputMode="decimal" value={a} onChange={e => setA(e.target.value)} id="utm-a" /></Field>
-        <Field label={dir === "u2l" ? "Northing (m)" : "Longitude"}><Input inputMode="decimal" value={b} onChange={e => setB(e.target.value)} id="utm-b" /></Field>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      </FormGroup>
+      <FormGroup legend="Coordinates" hint={dir === "u2l" ? "In metres. A comma works as the decimal point." : "In decimal degrees. South and west are negative."}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {dir === "u2l"
+            ? <>
+                <Field label="Easting (m)"><MaskedInput mask={maskEasting} inputMode="decimal" placeholder="e.g. 412500.00" value={a} onValueChange={setA} id="utm-a" /></Field>
+                <Field label="Northing (m)"><MaskedInput mask={maskNorthing} inputMode="decimal" placeholder="e.g. 9650000.00" value={b} onValueChange={setB} id="utm-b" /></Field>
+              </>
+            : <>
+                <Field label="Latitude"><MaskedInput mask={maskLat} inputMode="decimal" placeholder="e.g. -3.512345" value={a} onValueChange={setA} id="utm-a" /></Field>
+                <Field label="Longitude"><MaskedInput mask={maskLon} inputMode="decimal" placeholder="e.g. 122.123456" value={b} onValueChange={setB} id="utm-b" /></Field>
+              </>}
+        </div>
+      </FormGroup>
+      <div className="grid gap-3 sm:grid-cols-2" aria-live="polite">
         <Out label={r?.l1 ?? (dir === "u2l" ? "Latitude" : "Easting")} value={r?.v1 ?? "–"} id="utm-o1" />
         <Out label={r?.l2 ?? (dir === "u2l" ? "Longitude" : "Northing")} value={r?.v2 ?? "–"} id="utm-o2" />
       </div>
-      {dir === "l2u" && <p className="text-xs text-muted-foreground">Leave the zone empty or invalid to use the zone of the longitude.</p>}
     </Card>
   );
 }
@@ -48,24 +62,26 @@ function Tonnage() {
   const ok = [v, d, m].every(Number.isFinite) && v >= 0 && d > 0 && m >= 0 && m < 100;
   const wet = ok ? v * d : NaN, dry = ok ? wet * (1 - m / 100) : NaN;
   return (
-    <Card data-tool="tonnage">
+    <Card data-tool="tonnage" className="gap-5">
       <h2 className="text-base font-semibold">Volume to tonnes (wet and dry)</h2>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Volume (bcm)"><Input inputMode="decimal" value={vol} onChange={e => setVol(e.target.value)} id="t-vol" /></Field>
-        <Field label="Wet density (t/m³)"><Input inputMode="decimal" value={den} onChange={e => setDen(e.target.value)} id="t-den" /></Field>
-        <Field label="Moisture (% wet basis)"><Input inputMode="decimal" value={moist} onChange={e => setMoist(e.target.value)} id="t-moist" /></Field>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2"><Out label="Wet tonnes" value={f(wet, 1)} id="t-wet" /><Out label="Dry tonnes" value={f(dry, 1)} id="t-dry" /></div>
-      <p className="text-xs text-muted-foreground">Dry t = wet t × (1 − moisture). The default density and moisture are placeholders; use your site's measured values.</p>
+      <FormGroup legend="Material" hint="The density and moisture shown are placeholders. Use your site's measured values.">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Volume (bcm)"><MaskedInput mask={maskVolume} inputMode="decimal" placeholder="e.g. 1000" value={vol} onValueChange={setVol} id="t-vol" /></Field>
+          <Field label="Wet density (t/m³)"><MaskedInput mask={maskDensity} inputMode="decimal" placeholder="e.g. 1.6" value={den} onValueChange={setDen} id="t-den" /></Field>
+          <Field label="Moisture (%)"><MaskedInput mask={maskPercent} inputMode="decimal" placeholder="0 to 100" value={moist} onValueChange={setMoist} id="t-moist" /></Field>
+        </div>
+      </FormGroup>
+      <div className="grid gap-3 sm:grid-cols-2" aria-live="polite"><Out label="Wet tonnes" value={f(wet, 1)} id="t-wet" /><Out label="Dry tonnes" value={f(dry, 1)} id="t-dry" /></div>
+      <p className="text-xs text-muted-foreground">Dry t = wet t × (1 − moisture). Moisture is on a wet basis.</p>
     </Card>
   );
 }
 
-export const ToolsView = () => (
+export const CalculatorsView = () => (
   <AppFrame active="tools">{() => (
     <>
-      <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/portal/" }, { label: "Mining Tools" }]} />
-      <PageHead title="Mining Tools" lead="Small calculators that run in your browser. Nothing you type is sent anywhere." />
+      <Breadcrumb className="mb-4" items={[{ label: "Home", href: "/" }, { label: "Tools", href: "/tools/" }, { label: "Calculators" }]} />
+      <PageHead title="Calculators" lead="Small calculators that run in your browser. Nothing you type is sent anywhere." />
       <div className="grid gap-4 lg:grid-cols-2"><Utm /><Tonnage /></div>
     </>
   )}</AppFrame>

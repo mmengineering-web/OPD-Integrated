@@ -302,7 +302,7 @@ label:has(:required) > .lbl::before { content: ""; display: inline-block; width:
    Landing page (/): public home with hero, module cards, sites, how it works.
    Warm gradient + faint grid in the hero; serif headings; strata colours only (no violet).
    ========================================================================== */
-.land-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:center;min-height:100dvh;padding:calc(var(--safe-t) + 8rem) var(--sp-5) 0;
+.land-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:center;min-height:calc(100dvh - var(--topbar-h));padding:calc(var(--safe-t) + 4.5rem) var(--sp-5) 0;
   background:
     radial-gradient(55% 60% at 6% 72%,color-mix(in srgb,var(--strata-5) 80%,transparent),transparent 70%),
     radial-gradient(50% 55% at 96% 58%,color-mix(in srgb,#f2e0b6 75%,transparent),transparent 70%),
@@ -362,6 +362,66 @@ a.land-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .land-mod-off h3{color:var(--foreground)}
 .land-state{padding:.15rem .6rem;font-size:.75rem;font-weight:500;color:var(--muted-foreground);background:var(--secondary);border:1px solid var(--border);border-radius:var(--radius-full)}
 .land-state-on{color:var(--success);background:var(--success-bg);border-color:var(--success-border)}
+/* Colour meaning (docs/UX_RULES.md): green = ready, ochre = work in progress, grey = not started, blue = information, crimson = stop or danger, orange = the one action to take. */
+.land-state-wip{color:var(--warning);background:var(--warning-bg);border-color:var(--warning-border)}
 .land-site{display:flex;flex-direction:column;gap:.25rem;padding:var(--sp-4);background:var(--page);border:1px solid var(--border);border-radius:1rem}
 .land-step{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-2) 0}
 @media (prefers-reduced-motion:reduce){.land-deck{animation:none}.land-card,.land-card-cta{transition:none}}
+
+/* Exploration login, light theme: a pale scene so it reads differently from the OPD login. Dark theme keeps the dark core. */
+:root:not([data-theme="dark"]) .login-hero--light{background:#fbf3ea}
+:root:not([data-theme="dark"]) .login-hero--light .sh{opacity:.5;filter:saturate(.75) brightness(1.55)}
+:root:not([data-theme="dark"]) .login-hero--light::after{background:linear-gradient(0deg,rgba(251,243,234,.96) 0,rgba(251,243,234,.7) 50%,rgba(251,243,234,.15))}
+:root:not([data-theme="dark"]) .login-hero--light .hero-copy{color:var(--foreground)}
+:root:not([data-theme="dark"]) .login-hero--light .hero-copy p{color:var(--muted-foreground)}
+:root:not([data-theme="dark"]) .login-hero--light .hero-tags li{color:var(--foreground);background:rgba(255,255,255,.7);border-color:var(--border)}
+@media (min-width:900px){:root:not([data-theme="dark"]) .login-hero--light::after{background:linear-gradient(90deg,rgba(251,243,234,.97) 0,rgba(251,243,234,.75) 45%,rgba(251,243,234,.1))}}
+
+/* ==========================================================================
+   Microinteractions. One set of rules: hover (pointer) and press (touch) feedback, a shimmer for loading blocks.
+   Everything stops under prefers-reduced-motion (see the global rule above).
+   ========================================================================== */
+@keyframes m-shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+.skeleton { background: linear-gradient(100deg, var(--muted) 30%, color-mix(in srgb, var(--muted) 45%, var(--card)) 50%, var(--muted) 70%); background-size: 200% 100%; animation: m-shimmer 1.5s linear infinite; }
+
+/* .lift: a card that reacts. Rises on hover, presses in on touch, icon tile warms up. */
+.lift { transition: transform var(--dur-3) var(--ease-out), box-shadow var(--dur-3) var(--ease-out), border-color var(--dur-2) var(--ease); }
+.lift:active { transform: scale(.985); box-shadow: var(--shadow-xs); }
+.lift .lift-ico { transition: transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
+.lift:active .lift-ico { transform: scale(.92); }
+@media (hover: hover) {
+  .lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .lift:hover .lift-ico { transform: scale(1.08) rotate(-4deg); background: var(--primary); color: var(--primary-foreground); }
+}
+/* .tap: small controls that only need a press response */
+.tap { transition: transform var(--dur-1) var(--ease), background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
+.tap:active { transform: scale(.95); }
+/* links slide a little toward where they go */
+.nudge { transition: transform var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
+@media (hover: hover) { .nudge:hover { transform: translateX(2px); } }
+.nudge:active { transform: scale(.98); }
+a, button, summary, label { -webkit-tap-highlight-color: transparent; }
+
+/* Shell: sidebar width and content padding change together */
+.shell-side { transition: width var(--dur-3) var(--ease-out); }
+.shell-pad { transition: padding-left var(--dur-3) var(--ease-out); }
+
+/* Home hero: dissolve into the page instead of ending on a hard edge */
+.land-hero::after { content: ""; position: absolute; inset: auto 0 0 0; height: 9rem; z-index: 0; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--page)); }
+.land-hero > .land-deck { z-index: 1; }
+
+/* ==========================================================================
+   v2.1 motion: scroll reveal and page wipe (see src/components/opd/motion-layer.tsx, docs/UX_RULES.md section 7).
+   Blocks stay visible without JavaScript: they are hidden only after the layer has tagged them (html.js-motion).
+   ========================================================================== */
+@keyframes m-up { from { opacity: 0; transform: translateY(24px); } }
+html.js-motion [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(24px); }
+html.js-motion [data-reveal].is-in { animation: m-up .7s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
+
+#wipe { position: fixed; inset: 0; z-index: 9999; pointer-events: none; transform: translateY(100%);
+  background: linear-gradient(180deg, var(--strata-3) 0, var(--strata-2) 40%, var(--strata-1) 100%); }
+#wipe.cover { transform: translateY(0); pointer-events: all; transition: transform .32s var(--ease-out); }
+#wipe.leave { transform: translateY(-100%); transition: transform .5s var(--ease-out); }
+/* The new page starts under the panel, then the panel lifts off. */
+html[data-wipe="in"] #wipe { transform: translateY(0); transition: none; }
+@media (prefers-reduced-motion: reduce) { #wipe { display: none; } html.js-motion [data-reveal] { opacity: 1 !important; transform: none !important; animation: none !important; } }

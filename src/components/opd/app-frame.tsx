@@ -1,83 +1,83 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { LogOut, Moon, Sun } from "lucide-react";
-import { useTheme } from "@/lib/ui-state";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BrandMark } from "@/components/brand-mark";
-import { ROLE_LABEL, topRole } from "@/lib/opd/auth-core.js";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PROJECTS } from "@/lib/opd/config.js";
+import { ROLE_LABEL, canOpen, topRole } from "@/lib/opd/auth-core.js";
 import { loadAccess, legacyExplo, logoutAll } from "@/lib/opd/session.js";
-import { cn } from "@/lib/utils";
+import { NAV, type NavKey, type Need } from "@/lib/opd/sitemap";
+import { AppNav, Shell } from "@/components/opd/shell";
+export { NAV, AppNav };
+export type { NavKey, Need };
 
 export type Access = NonNullable<ReturnType<typeof loadAccess>>;
-export type NavKey = "home" | "production" | "explo" | "documents" | "tools" | "help";
 
-/** The six top-level pages of OPD, in menu order. */
-export const NAV: { key: NavKey; label: string; href: string }[] = [
-  { key: "home", label: "Home", href: "/portal/" },
-  { key: "production", label: "Production", href: "/production/" },
-  { key: "explo", label: "Exploration", href: "/explo/" },
-  { key: "documents", label: "Documents", href: "/documents/" },
-  { key: "tools", label: "Mining Tools", href: "/tools/" },
-  { key: "help", label: "Help", href: "/help/" },
-];
-
-/** Horizontal menu. Scrolls sideways on a phone instead of wrapping. */
-export function AppNav({ active, className }: { active: NavKey; className?: string }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => { ref.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: "center", block: "nearest" }); }, [active]);   // phone: bring the current item into view
+/** Shown when the person is signed in but has no account that can open the page. */
+export function AccessDenied({ access, need, backHref, backLabel }: { access: Access; need: Need; backHref: string; backLabel: string }) {
+  const what = need === "production" ? "a production account" : need === "exploration" ? "an exploration account" : need === "ho-production" ? "a Head Office production (Hub) account" : need === "super_admin" ? "a super admin account" : "an account";
+  const other = async () => { await logoutAll(); location.assign(`/login/?next=${encodeURIComponent(location.pathname)}`); };
   return (
-    <nav ref={ref} aria-label="Main" className={cn("overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}>
-      <ul className="flex min-w-max items-center gap-1">
-        {NAV.map(n => (
-          <li key={n.key}>
-            <a href={n.href} data-nav={n.key} aria-current={n.key === active ? "page" : undefined}
-              className={cn("inline-flex h-9 items-center rounded-md px-4 text-[.8125rem] font-medium uppercase tracking-wide transition-colors",
-                n.key === active ? "bg-[var(--info-bg)] text-info" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
-              {n.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <Card className="mx-auto mt-8 max-w-[34rem] items-center gap-3 p-8 text-center" id="denied" role="alert">
+      <span className="grid size-12 place-items-center rounded-full bg-[var(--danger-bg)] text-danger"><LockKeyhole className="size-6" /></span>
+      <h1 className="font-serif text-2xl font-medium">You don&apos;t have access to this page</h1>
+      <p className="text-sm text-muted-foreground">{access.name} is signed in, but this page needs {what} and none of your accounts qualifies. If you think this is a mistake, ask your site admin or a super admin to add you.</p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <Button asChild variant="outline"><a href={backHref}>{backLabel}</a></Button>
+        <Button asChild variant="outline"><a href="/portal/">Open portal</a></Button>
+        <Button variant="ghost" onClick={other} id="b-other">Sign in with another account</Button>
+      </div>
+    </Card>
+  );
+}
+
+/** Loading placeholder shaped like a page, so nothing jumps when the content arrives. */
+export function PageSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-[var(--content-max)] p-6" aria-busy aria-label="Loading">
+      <Skeleton className="mb-4 h-4 w-40" /><Skeleton className="mb-5 h-40 w-full rounded-2xl" />
+      <div className="grid gap-3 sm:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
+    </div>
   );
 }
 
 /**
- * Signed-in page frame: header (brand, who, theme, sign out) + the main menu + content.
- * Signed out, it redirects to /login/?next=<this page>. `legacyRedirect` keeps the Phase 1 rule for the portal home:
- * phones with the old Exploration login go straight to /explo/.
+ * A page inside the OPD shell. Public pages leave `gate` out and open for everyone. A page that shows data sets `gate`:
+ * signed out it goes to the OPD login (/login/?next=<this page>), and once signed in it checks the person's accounts
+ * and shows "You don't have access to this page" when none qualifies.
+ * `legacyRedirect` keeps the Phase 1 rule for the portal: phones with the old Exploration login go straight to /explo/.
+ * `full` drops the content container, for pages that lay out their own full-width sections (Home).
  */
-export function AppFrame({ active, legacyRedirect = false, children }: { active: NavKey; legacyRedirect?: boolean; children: (access: Access) => React.ReactNode }) {
-  const [access, setAccess] = useState<Access | undefined>(undefined);
-  const { theme, toggle } = useTheme();
+export function AppFrame({ active, gate, backHref = "/", backLabel = "Back to Home", legacyRedirect = false, full = false, children }:
+  { active: NavKey | null; gate?: Need; backHref?: string; backLabel?: string; legacyRedirect?: boolean; full?: boolean; children: (access: Access | null) => React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [access, setAccess] = useState<Access | null>(null);
+  const path = usePathname() || "/";
 
   useEffect(() => {
     const a = loadAccess();
-    if (a?.ok) { setAccess(a); return; }
-    if (legacyRedirect && legacyExplo()) { location.replace("/explo/"); return; }
-    location.replace(`/login/?next=${encodeURIComponent(location.pathname)}`);
-  }, [legacyRedirect]);
+    const acc = a?.ok ? a : null;
+    if (gate && !acc) {
+      if (legacyRedirect && legacyExplo()) location.replace("/explo/");
+      else location.replace(`/login/?next=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    if (!gate && !acc && path === "/" && legacyExplo()) { location.replace("/explo/"); return; }   // phones with the old standalone login keep going straight to Exploration
+    setAccess(acc); setReady(true);
+  }, [gate, legacyRedirect, path]);
 
-  if (!access) return <div className="grid min-h-dvh place-items-center text-sm text-muted-foreground" aria-busy>Loading…</div>;
-  const role = topRole(access);
+  if (!ready) return <PageSkeleton />;
+  const role = access ? topRole(access) : null;
   const out = async () => { await logoutAll(); location.replace("/"); };
+  const allowed = !gate || canOpen(PROJECTS, access, gate);
+  const account = access ? { label: `${access.name} · ${role ? ROLE_LABEL[role as keyof typeof ROLE_LABEL] : "no role"}`, signOut: out } : null;
 
   return (
-    <div className="min-h-dvh">
-      <header className="sticky top-0 z-[20] border-b bg-[color-mix(in_srgb,var(--card)_92%,transparent)] backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[var(--content-max)] flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 md:h-[var(--topbar-h)] md:flex-nowrap md:py-0">
-          <a href="/" aria-label="One Portal Data, home"><BrandMark className="size-8" /></a>
-          <div className="min-w-0 text-sm leading-tight"><div className="font-serif text-base font-medium">One Portal Data</div>
-            <div className="truncate text-xs text-muted-foreground" id="who">{access.name} · {role ? ROLE_LABEL[role as keyof typeof ROLE_LABEL] : "no role"}</div></div>
-          <AppNav active={active} className="order-last w-full md:order-none md:ml-4 md:w-auto md:min-w-0 md:flex-1" />
-          <div className="ml-auto flex items-center gap-1 md:ml-0">
-            <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">{theme === "dark" ? <Sun /> : <Moon />}</Button>
-            <Button variant="outline" size="sm" onClick={out} id="b-out"><LogOut />Sign out</Button>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-10 pt-4">{children(access)}</main>
-    </div>
+    <Shell active={active} access={access} account={account} path={path} full={full && allowed}>
+      {allowed ? children(access) : <div className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-12 pt-5 md:px-8"><AccessDenied access={access!} need={gate!} backHref={backHref} backLabel={backLabel} /></div>}
+    </Shell>
   );
 }
 

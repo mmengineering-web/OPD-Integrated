@@ -7,6 +7,7 @@ export function createClient(url, key, opts) {
     if (table === 'exp_profile' && window.__role) rows = [{ ...rows[0], role: window.__role }];
     if (table === 'exp_role_def' && window.__role) rows = rows.filter(x => x.role === window.__role);
     if (table === 'exp_profile' && window.__noProfile) rows = [];
+    if (table === 'exp_profile' && window.__fnDb && window.__fnDb[sk]) rows = window.__fnDb[sk];   // admin page tests: users of this project
     if (window.__failTable === table) { const q = {}; q.then = (a, b) => Promise.resolve({ data: null, error: { message: 'permission denied for table ' + table } }).then(a, b); for (const m of ['select','eq','order','range','gte']) q[m] = () => q; return q; }
     const q = {};
     q.then = (res, rej) => Promise.resolve({ data: rows, error: null }).then(res, rej);
@@ -30,7 +31,23 @@ export function createClient(url, key, opts) {
     from: chain,
     schema: sc => ({ from: t => chain(sc === 'dash' ? 'dash_' + t : t),
       rpc: async fn => ({ data: fn === 'me' ? (window.__hubNoMember ? [] : [{ email: 'geo@x', role: 'viewer', sites: null }]) : null, error: null }) }),
-    rpc: async () => ({ data: null, error: null }),
+    rpc: async (fn, a) => {
+      if (fn === 'exp_admin_upsert_profile' && window.__fnDb && window.__fnDb[sk]) { (window.__fnLog = window.__fnLog || []).push([sk, 'rpc', a]); const r = window.__fnDb[sk].find(x => x.email === a.p_email); if (r) { r.role = a.p_role; r.full_name = a.p_name; } }
+      return { data: null, error: null };
+    },
+    // Edge Function stand-in for the admin page tests. window.__fnDb[storageKey] = users; window.__fnFail[storageKey] = error text.
+    functions: { async invoke(name, { body }) {
+      (window.__fnLog = window.__fnLog || []).push([sk, name, body]);
+      const bad = window.__fnFail && window.__fnFail[sk];
+      if (window.__fnDown && window.__fnDown[sk]) return { data: null, error: { message: 'Failed', context: { status: 404 } } };   // function not deployed
+      if (bad && body.action !== 'list') return { data: null, error: { message: 'Edge Function returned a non-2xx status code', context: { status: 400, json: async () => ({ error: bad }) } } };
+      const db = (window.__fnDb = window.__fnDb || {}); const rows = (db[sk] = db[sk] || []);
+      if (body.action === 'list') return { data: { users: rows }, error: null };
+      if (body.action === 'create') { const id = 'new-' + sk + '-' + rows.length; rows.push({ user_id: id, email: body.email, full_name: body.full_name, role: body.role, is_active: true }); return { data: { user_id: id }, error: null }; }
+      if (body.action === 'update') { const r = rows.find(x => x.user_id === body.user_id); if (r) r.role = body.role; return { data: { ok: true }, error: null }; }
+      if (body.action === 'delete') { const i = rows.findIndex(x => x.user_id === body.user_id); if (i >= 0) rows.splice(i, 1); return { data: { ok: true }, error: null }; }
+      return { data: { ok: true }, error: null };
+    } },
     storage: { from: () => ({ upload: async () => ({ error: null }), createSignedUrl: async () => ({ data: { signedUrl: '' }, error: null }), remove: async () => ({}) }) },
   };
 }

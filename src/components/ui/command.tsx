@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 // Every typed word must appear in the item text. cmdk's default fuzzy match is too loose for a short tab list.
 const wordFilter = (value: string, search: string) => {
   const v = value.toLowerCase();
-  return search.toLowerCase().split(/\s+/).filter(Boolean).every(w => v.includes(w)) ? 1 : 0;
+  const q = search.toLowerCase().trim();
+  if (!q.split(/\s+/).every(w => v.includes(w))) return 0;
+  return v.startsWith(q) ? 2 : 1;   // a name that starts with what was typed comes first
 };
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {

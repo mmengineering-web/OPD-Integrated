@@ -1,5 +1,5 @@
-import { ToolsView } from "@/components/opd/tools-view";
+import { ToolsHub } from "@/components/opd/hubs";
 
 export default function Page() {
-  return <ToolsView />;
+  return <ToolsHub />;
 }

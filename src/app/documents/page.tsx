@@ -1,5 +1,5 @@
-import { DocumentsView } from "@/components/opd/documents-view";
+import { DocumentsHub } from "@/components/opd/hubs";
 
 export default function Page() {
-  return <DocumentsView />;
+  return <DocumentsHub />;
 }

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { MotionLayer } from "@/components/opd/motion-layer";
+import { WIPE_PRE } from "@/lib/opd/wipe.js";
 
 const geist = localFont({
   src: [
@@ -37,8 +39,8 @@ const PRE = `try{var d=document.documentElement,t=localStorage.getItem('exp_them
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${geist.variable} ${geistMono.variable} ${serif.variable}`} suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: PRE }} /></head>
-      <body>{children}</body>
+      <head><script dangerouslySetInnerHTML={{ __html: PRE + WIPE_PRE }} /></head>
+      <body>{children}<MotionLayer /></body>
     </html>
   );
 }
