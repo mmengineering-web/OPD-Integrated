@@ -1,0 +1,320 @@
+{
+  "_comment": "Mapping config for WKM Daily Report PDF -> Master_Data_Site_WKM.xlsm (tblRAW* tables). Edit labels here instead of code.",
+  "site": "PT WANA KENCANA MINERAL",
+  "shift": "ALL",
+  "contractor_map": {
+    "PT. WKM": "PT WKM",
+    "PT WKM": "PT WKM",
+    "WKM": "PT WKM",
+    "PT. FSI": "PT FSI",
+    "PT FSI": "PT FSI",
+    "FSI": "PT FSI",
+    "PT. TJA": "PT TJA",
+    "PT TJA": "PT TJA",
+    "TJA": "PT TJA",
+    "GEO LAB": "GS LAB",
+    "GS LAB": "GS LAB",
+    "EXPLORASI": "GS EXP",
+    "GS EXP": "GS EXP"
+  },
+  "hse_contractor_headers": [
+    "PT. WKM",
+    "PT. FSI",
+    "PT. TJA",
+    "EXPLORASI",
+    "GEO LAB"
+  ],
+  "hse_categories": {
+    "Nearmiss": "NM",
+    "Medical Treatment Injury": "MTI",
+    "Lost Time Injury Mayor": "LTI",
+    "First Aid Injury": "FAI",
+    "Property Damage": "PD",
+    "Fire Case": "FC",
+    "Enviro Case": "EC",
+    "Fatality": "FATALITY"
+  },
+  "risk_level_map": {
+    "TINGGI": "High",
+    "HIGH": "High",
+    "SEDANG": "Medium",
+    "MEDIUM": "Medium",
+    "RENDAH": "Low",
+    "LOW": "Low",
+    "EKSTREM": "Extreme",
+    "SANGAT TINGGI": "Extreme",
+    "EXTREME": "Extreme"
+  },
+  "repair_status_map": {
+    "OPEN": "Open",
+    "CLOSE": "Closed",
+    "CLOSED": "Closed",
+    "IN PROGRESS": "In Progress",
+    "ON PROGRESS": "In Progress",
+    "CONTINUE": "Continue",
+    "CANCEL": "Cancelled",
+    "CANCELLED": "Cancelled",
+    "TEMPORARY CONTROL": "Temporary Control",
+    "PROGRESS": "In Progress"
+  },
+  "hazard_category_map": {
+    "KONDISI TIDAK AMAN": "Kondisi Tidak Aman",
+    "TINDAKAN TIDAK AMAN": "Tindakan Tidak Aman",
+    "KONDISI & TINDAKAN TIDAK AMAN": "Kondisi & Tindakan Tidak Aman"
+  },
+  "text_replacements": [
+    [
+      "\\bKM\\s*(\\d)",
+      "KM \\1"
+    ]
+  ],
+  "mining_rows": {
+    "SOIL": "S",
+    "OB": "OB",
+    "LGO": "L",
+    "MGO": "M",
+    "HGO": "H",
+    "QUARRY": "Q"
+  },
+  "mining_contractors": {
+    "PT FSI": "PT FSI",
+    "PT TJA": "PT TJA"
+  },
+  "mng_all_pit_label": "All",
+  "pit_chart": {
+    "title": "PRODUKSI PIT",
+    "_orders_note": "Left-to-right bar order of the PRODUKSI PIT chart. One list per layout the site has used; the list whose length equals the number of bars is used. Up to 20-Sep-2026: 16 pits. From 21-Sep-2026: ETO added at the end.",
+    "orders": [
+      [
+        "KOMALA",
+        "WIDYA",
+        "BAGUNA",
+        "ABIDIN",
+        "MALAMO",
+        "SELI",
+        "KALABATA",
+        "NUKU",
+        "MUDAFAR",
+        "KHAIRUN",
+        "TABARIJI",
+        "NUKILA",
+        "MABIJI",
+        "MOLE",
+        "DJAFARSYAH",
+        "MALIKUDDIN"
+      ],
+      [
+        "KOMALA",
+        "WIDYA",
+        "BAGUNA",
+        "ABIDIN",
+        "MALAMO",
+        "SELI",
+        "KALABATA",
+        "NUKU",
+        "MUDAFAR",
+        "KHAIRUN",
+        "TABARIJI",
+        "NUKILA",
+        "MABIJI",
+        "MOLE",
+        "DJAFARSYAH",
+        "MALIKUDDIN",
+        "ETO"
+      ]
+    ],
+    "order": [
+      "KOMALA",
+      "WIDYA",
+      "BAGUNA",
+      "ABIDIN",
+      "MALAMO",
+      "SELI",
+      "KALABATA",
+      "NUKU",
+      "MUDAFAR",
+      "KHAIRUN",
+      "TABARIJI",
+      "NUKILA",
+      "MABIJI",
+      "MOLE",
+      "DJAFARSYAH",
+      "MALIKUDDIN",
+      "ETO"
+    ],
+    "ocr_check": true
+  },
+  "pit_contractor_override": {},
+  "stock_rows": {
+    "HGO": "H",
+    "MGO": "M",
+    "LGO A": "L",
+    "LGO B": "LB",
+    "WAITING SURVEY": "WS",
+    "WAITING ASSAY": "WA"
+  },
+  "hauling_contractor": "PT WKM",
+  "equipment_columns": {
+    "SY 215": "EXC1",
+    "SY 365": "EXC2",
+    "DT": "DT",
+    "DOZER": "DOZER",
+    "BREAKER": "BREAKER",
+    "GRADER": "GRADER",
+    "COMPAC": "COMPAC",
+    "FT": "FT",
+    "WT": "WT",
+    "LV": "LV",
+    "LT": "LT",
+    "ADT": "ADT"
+  },
+  "equipment_rows": {
+    "OPERATION": "OP",
+    "STANDBY": "S",
+    "BREAKDOWN": "B",
+    "POPULATION": "P"
+  },
+  "equipment_contractor_labels": [
+    "FSI",
+    "TJA",
+    "WKM",
+    "GS EXP"
+  ],
+  "unit_perf_rows": {
+    "EXCA": "EXC",
+    "DT": "DT",
+    "DZ": "DZ",
+    "GD": "GD",
+    "CP": "CP"
+  },
+  "fuel_company_labels": [
+    "WKM",
+    "FSI",
+    "TJA"
+  ],
+  "lab_contractor": "GS LAB",
+  "lab_rows": {
+    "SAMPLE IN": "ID",
+    "FINISH PREP": "FD",
+    "ASSAY ANALYSIS": "AD"
+  },
+  "lab_cols": {
+    "QC": "QC",
+    "SS": "SS",
+    "SC": "SC",
+    "FO": "FO",
+    "DOME": "DOME",
+    "BARGE": "BARGE",
+    "EXPLORASI": "EXPLO"
+  },
+  "lab_equipment_cols": {
+    "OVEN": "OVEN",
+    "JAW CRUSH": "JAW CRUSH",
+    "D.ROLL": "D.ROLL",
+    "COMP": "COMP",
+    "PRESS": "PRESS",
+    "PULV": "PULV",
+    "XRF": "XRF"
+  },
+  "lab_equipment_rows": {
+    "POPULATION": "POP",
+    "READY": "R",
+    "BREAKDOWN": "B"
+  },
+  "_lab_act_source_note": "PDF has no ACT row. READY = copy READY into ACT (matches how the master has been keyed since 26-May-2026; note P = ACT+B+R then double counts). BLANK = leave ACT empty.",
+  "lab_act_source": "READY",
+  "weather_contractor_labels": [
+    "TJA",
+    "FSI",
+    "WKM"
+  ],
+  "cons_auto_remarks": [
+    "ON PROGRESS",
+    "DONE",
+    "FINISH",
+    "FINISHED",
+    "COMPLETE",
+    "COMPLETED"
+  ],
+  "manpower_company_labels": [
+    "WKM",
+    "FSI",
+    "TJA",
+    "GS LAB",
+    "GS EXP"
+  ],
+  "_explo_note": "Exploration is staged on a REVIEW_ sheet (not imported) until the company->contractor mapping is confirmed. Keys are matched as prefixes of the upper-case alphanumeric company name.",
+  "explo_company_map": {
+    "PTWANAKENCANAMINERAL": "PT WKM",
+    "PTGEOARTHASELARAS": "GS EXP"
+  },
+  "tolerance_abs": 0.5,
+  "tolerance_rel": 0.0005,
+  "barge_status_map": {
+    "COMPLETE": "Completed",
+    "COMPLETED": "Completed",
+    "TBI": "TBI",
+    "LOADING": "Loading",
+    "SAILING": "Sailing",
+    "UNLOADING": "Unloading",
+    "STANDBY": "Standby",
+    "CONTINUE": "Continue"
+  },
+  "_barge_note": "barge_stage_mode: update_all = every SI in the PDF barge list is written; existing SIs are overwritten with the latest report (WARN lists the changes). finished_on_report_date = old rule (only SIs finished on the report date).",
+  "barge_stage_mode": "update_all",
+  "ship_contractors": [
+    "PT FSI",
+    "PT TJA"
+  ],
+  "_ship_sync_note": "SHIP follows BARGE. When a barge SI changes (FINISHDATE, ACTUAL CAPACITY or CONTRACTOR) the SHIP DAY of the old and the new finish day is recalculated from the latest barge list. Changes to days already in the master are listed in the Ship updates tab and OVERWRITE the master by default (WARN); the user can set Leave per row. Days with no SHIP row are skipped. scan_months_back: also list older days (this and the previous N months) where SHIP differs from the barge list, with stale_default (Leave or Apply) as their default.",
+  "ship_sync": {
+    "enabled": true,
+    "scan_months_back": 1,
+    "stale_default": "Leave"
+  },
+  "_cons_remark_note": "cons_remark_mode: pdf = keep PDF remark text unless it is a status in cons_auto_remarks (then '-'); dash = always '-' (as keyed manually so far).",
+  "cons_remark_mode": "pdf",
+  "_fuel_note": "STOCK ADD is derived so the master STOCK chain equals the PDF STOCK every day: ADD = PDF STOCK - (previous STOCK - DAY).",
+  "_cons_item_overrides_note": "AREA/CONSCATEGORY for construction items that are not yet in the master history. Key = item text as printed in the PDF.",
+  "cons_item_overrides": {},
+  "_pit_infer_owner_note": "Pits whose contractor is worked out each day from the HGO totals instead of history (ETO = ore re-handled from the ETO stockpile; on 21-30 Sep it reconciles to PT FSI).",
+  "pit_infer_owner": [
+    "ETO"
+  ],
+  "plan_check": {
+    "_note": "Plan in the report vs tblCALENDAR (read only - nothing is written). PRODUCTION PLAN rows DAY/WEEK/MONTH/YEAR -> {code}-DAY/WTD/MTD/YTD; SALES TARGET SALE WEEK/MONTH/YEAR -> ST-WTD/MTD/YTD (ST-DAY in tblCALENDAR = ST-WTD/7). MTD/YTD in tblCALENDAR are full-month / full-year targets.",
+    "enabled": true,
+    "calendar_table": "tblCALENDAR",
+    "contractors": [
+      "PT FSI",
+      "PT TJA"
+    ],
+    "production_rows": {
+      "PLAN SOIL": "S",
+      "PLAN OB": "OB",
+      "PLAN LIMONIT": "L",
+      "PLAN LGO": "L",
+      "PLAN MGO": "M",
+      "PLAN HGO": "H",
+      "PLAN QUARRY": "Q"
+    },
+    "production_periods": {
+      "DAY": "DAY",
+      "WEEK": "WTD",
+      "MONTH": "MTD",
+      "YEAR": "YTD"
+    },
+    "sale_row": "TARGET SALE (WMT)",
+    "sale_prefix": "ST",
+    "sale_periods": {
+      "WEEK": "WTD",
+      "MONTH": "MTD",
+      "YEAR": "YTD"
+    },
+    "tolerance_abs": 0.5
+  },
+  "barge_week": {
+    "start": 6,
+    "sign": 1
+  }
+}

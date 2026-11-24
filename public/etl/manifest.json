@@ -1,0 +1,29 @@
+{
+ "version": "4.4-5",
+ "python": [
+  "dr_pdf_parser.py",
+  "dr_to_master.py",
+  "bm_pdf_parser.py",
+  "bm_to_master.py",
+  "master_export.py",
+  "opd_formulas.py",
+  "opd_parse.py",
+  "opd_barge.py",
+  "opd_plan.py",
+  "opd_ship.py",
+  "tms_adapter.py",
+  "tms_to_master.py",
+  "tms_dpr_parser.py",
+  "tms_hazard_parser.py",
+  "tms_hazard_stage.py",
+  "tms_barge.py",
+  "tms_stock.py",
+  "web_parse.py"
+ ],
+ "wheels": [
+  "et_xmlfile-2.0.0-py3-none-any.whl",
+  "openpyxl-3.1.5-py2.py3-none-any.whl",
+  "pdfminer_six-20260107-py3-none-any.whl",
+  "pdfplumber-0.11.11-py3-none-any.whl"
+ ]
+}

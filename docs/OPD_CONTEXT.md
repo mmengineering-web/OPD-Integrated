@@ -4,7 +4,7 @@ Last updated: 20 Nov 2026. Owner: Gera. Portfolio project (non-commercial), but 
 Keys are NOT stored in this file. Publishable (anon) keys live in `src/lib/opd/config.js` and `src/lib/core/config.js`. Never commit a service-role key or a password.
 
 ## 1. What OPD is
-One installable web app (PWA) for a mining company: one login for production, exploration and head-office data across sites. Hosted on Vercel as a static Next.js 16 export at https://explo-entry-next.vercel.app/ (single origin, so existing phones keep their session and local data).
+One installable web app (PWA) for a mining company: one login for production, exploration and head-office data across sites. Hosted on Vercel as a static Next.js 16 export at https://technicalproductionportal.vercel.app/ (single origin). Phones that used the old Exploration app (`explo-entry-next.vercel.app`) start empty here, because browsers keep data per address; they must sync the old app to `0 pending` first (see `docs/CUTOVER.md`, Case B).
 
 ## 2. Architecture
 - Host: `explo-entry-next` repo (Next.js 16, React 19, Tailwind v4, Dexie, supabase-js 2). Static export, `trailingSlash: true`.

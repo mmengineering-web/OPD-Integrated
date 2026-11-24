@@ -5,7 +5,7 @@ import { GatedPage, HubLanding } from "@/components/opd/hub";
 export const ProductionHub = () => (
   <HubLanding active="production" tag="Operations" title="Production" accent="Hub"
     lead="Check how each site is performing, send the daily report, and read how the numbers are built."
-    inside={[{ label: "Sites with production", value: "WKM · BM · TMS" }, { label: "Head office view", value: "All sites" }, { label: "Daily upload", value: "Phase 4" }]}
+    inside={[{ label: "Sites with production", value: "WKM · BM · TMS" }, { label: "Head office view", value: "All sites" }, { label: "Daily upload", value: "WKM · BM" }]}
     cards={[
       { icon: LayoutDashboard, title: "Dashboard", desc: "Output against plan, site by site and for head office.", href: "/production/dashboard/", needs: true },
       { icon: ClipboardList, title: "Uploads", desc: "Send the daily report. The file is checked before anything is saved.", href: "/production/data-inputs/", needs: true },
@@ -56,7 +56,7 @@ export const ToolsHub = () => (
 const P = { label: "Production", href: "/production/" };
 const E = { label: "Exploration", href: "/exploration/" };
 const D = { label: "Documents", href: "/documents/" };
-export const ProductionInputs = () => <GatedPage active="production" parent={P} need="production" title="Uploads" lead="Send the daily production report. Your browser reads the file and checks it before anything is saved." will={["Upload the WKM, BM or TMS daily report", "Preview with warnings and rejected rows", "Load into the site database, with undo"]} />;
+export { ProductionInputs } from "@/components/opd/upload-view";
 export const ProductionGuidelines = () => <GatedPage active="production" parent={P} need="production" title="Guides" lead="How to read the dashboard and fill each form." will={["Dashboard guide, page by page", "Data input guide per form", "Definitions of each measure"]} />;
 export const ExplorationRequest = () => <GatedPage active="explo" parent={E} need="exploration" title="Requests" lead="Ask for a dataset, a map or supporting files." will={["A request form with the dataset, site and purpose", "Status of your earlier requests", "Approval by the site admin"]} />;
 export const DocumentsReports = () => <GatedPage active="documents" parent={D} need="any" title="Reports" lead="Monthly, quarterly and annual reports." will={["Reports by site and period", "Search by title", "Download for the sites you can access"]} />;

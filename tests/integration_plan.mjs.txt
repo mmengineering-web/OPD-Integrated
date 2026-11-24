@@ -1,0 +1,78 @@
+import fs from "node:fs"; import vm from "node:vm"; import { createRequire } from "node:module";
+import * as C from "./etl-client.mjs";
+const require = createRequire(import.meta.url); const pg = require("pg");
+const ROOT = "/home/claude/zip/OPD-phase4-update/opd-integrated/public/etl";
+const SITE = "PT WANA KENCANA MINERAL", UID = "00000000-0000-0000-0000-000000000003", PDF = process.argv[2], REPORT = process.argv[3];
+const db = new pg.Client({ host: "/tmp", port: 54329, user: "postgres", database: "e4" }); await db.connect();
+
+// ---- seed: history before the report day (what the seed script does), and the desktop's prod_v2 rows for the day
+await db.query("delete from public.etl_history");
+let n = 0; const batchRows = [];
+for (const line of fs.readFileSync("/tmp/WKM.ndjson", "utf8").split("\n")) {
+  if (!line.trim()) continue; const o = JSON.parse(line);
+  if (o.tbl.startsWith("tblRAW") && o.tbl !== "tblRAWBARGE" && o.row_date && o.row_date >= REPORT) continue;
+  if (o.tbl === "tblCALENDAR" && o.row_date && o.row_date.slice(0,10) < "2025-12-12") continue;
+  
+  batchRows.push([o.tbl, SITE, o.row_date, JSON.stringify(o.data)]);
+}
+for (let i = 0; i < batchRows.length; i += 2000) {
+  const part = batchRows.slice(i, i + 2000);
+  await db.query("insert into public.etl_history (tbl, site, row_date, data) select * from unnest($1::text[], $2::text[], $3::date[], $4::jsonb[])",
+    [part.map(r => r[0]), part.map(r => r[1]), part.map(r => r[2]), part.map(r => r[3])]); n += part.length;
+}
+await db.query("update public.etl_history set data = jsonb_set(jsonb_set(data, '{H-DAY}', to_jsonb((data->>'H-DAY')::numeric + 500)), '{ST-WTD}', to_jsonb((data->>'ST-WTD')::numeric + 700)) where tbl='tblCALENDAR' and row_date >= $1 and data->>'CONTRACTOR' = 'PT FSI'", [REPORT]);
+await db.query("delete from prod_v2.fact_production_plan");
+await db.query("delete from prod_v2.fact_production_actual");
+const prod = JSON.parse(fs.readFileSync("/tmp/jt/prod_19nov.json", "utf8"));
+await db.query(`insert into prod_v2.fact_production_actual (date,site,pit,contractor,shift,category,metric_group,metric,value,text_value,source_file)
+  select date,site,pit,contractor,shift,category,metric_group,metric,value,text_value,'desktop' from jsonb_populate_recordset(null::public.etl_staging_actual, $1::jsonb)`, [JSON.stringify(prod)]);
+await db.query("update prod_v2.fact_production_actual set id = id"); // no-op: keeps ids
+console.log("seeded history rows", n, "| prod_v2 rows", prod.length);
+
+// ---- a Supabase-like client over pg: rpc(fn, args).range(a,b)
+let chain = Promise.resolve();
+const as = (role, fn) => (chain = chain.then(() => as1(role, fn), () => as1(role, fn)));
+const as1 = async (role, fn) => { await db.query("begin"); await db.query("set local role authenticated"); await db.query("select set_config('test.uid',$1,true)", [role]); try { const r = await fn(); await db.query("commit"); return r; } catch (e) { await db.query("rollback"); throw e; } };
+const client = (uid) => ({ rpc: (fn, args = {}) => {
+  const keys = Object.keys(args); let lo = null, hi = null;
+  const run = async () => { try {
+    const sql = `select * from public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}${(args[k] !== null && typeof args[k] === "object") ? "::jsonb" : ""}`).join(", ")})` + (lo !== null ? ` offset ${lo} limit ${hi - lo + 1}` : "");
+    const res = await as(uid, () => db.query(sql, keys.map(k => (args[k] !== null && typeof args[k] === "object") ? JSON.stringify(args[k]) : args[k])));
+    const unwrap = res.fields.length === 1 && res.fields[0].name === fn;
+    const data = unwrap ? (res.rows.length === 1 && !["etl_history_read", "etl_shadow_diff"].includes(fn) ? res.rows[0][fn] : res.rows.map(r => r[fn])) : res.rows;
+    return { data, error: null };
+  } catch (e) { return { data: null, error: { message: e.message } }; } };
+  const p = { range: (a, b) => { lo = a; hi = b; return p; }, then: (res, rej) => run().then(res, rej) }; return p; } });
+
+// ---- the worker, shimmed for node (Pyodide from the local copy of the same release)
+const out = []; const sb = { console, URL, Uint8Array, JSON, Promise, setTimeout, String, Error, Object,
+  fetch: async (u) => { const b = fs.readFileSync(ROOT + new URL(u).pathname.replace(/^\/etl/, "")); return { ok: true, status: 200, text: async () => b.toString("utf8"), arrayBuffer: async () => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) }; },
+  importScripts() {}, loadPyodide: () => require("/tmp/pyo/pyodide/pyodide.js").loadPyodide({ indexURL: "/tmp/pyo/pyodide" }), postMessage: (m) => out.push(m) };
+vm.createContext(sb); vm.runInContext(fs.readFileSync(ROOT + "/etl-worker.js", "utf8") + "\n;this.__on = onmessage;", sb);
+const wait = (f) => new Promise(r => { const t = setInterval(() => { const m = out.find(f); if (m) { clearInterval(t); r(m); } }, 50); });
+let id = 0; const ask = async (msg) => { const i = ++id; sb.__on({ data: { ...msg, id: i } }); const r = await wait(m => m.id === i); if (r.type === "error") throw new Error(r.message); return JSON.parse(r.data); };
+sb.__on({ data: { type: "init", base: "https://x.test/etl/", version: "t" } }); await wait(m => m.type === "ready");
+
+// ---- the page's flow
+const c = client(UID); const t0 = Date.now(); const lap = (s) => console.log(((Date.now() - t0) / 1000).toFixed(1) + "s", s);
+const bytes = fs.readFileSync(PDF); const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+const pk = await ask({ type: "peek", kind: "wkm", bytes: ab }); lap("report date " + pk.report_date);
+const hist = await C.readHistory(c, pk.report_date, () => {}); lap("history " + Object.values(hist).reduce((a, v) => a + v.length, 0) + " rows");
+const parsed = await ask({ type: "parse", kind: "wkm", bytes: ab, history: hist }); lap(`parsed ${parsed.summary.rows} rows`);
+console.log("issues", JSON.stringify(C.logCounts(parsed.log)), "blockers", C.blockers(parsed));
+const st = await C.stage(c, { site: parsed.site, parsed, fileName: "Daily_Report_WKM_19_November_2026.pdf", replacePlan: true }); lap(`staged batch ${st.batch} raw ${st.rawRows}`);
+const ld = await C.load(c, st.batch, { replacePlan: true }); lap("loaded " + JSON.stringify({ target: ld.target, ins: ld.actual_inserted, del: ld.actual_deleted, hist_ins: ld.history_inserted }));
+console.log("plan in parsed:", parsed.plan ? parsed.plan.changes.length + " changes, " + parsed.plan.rows.length + " rows, " + parsed.plan.days.length + " days" : "none");
+const q = async (t, a) => (await db.query(t, a)).rows;
+console.log("load counts", JSON.stringify({ pd: ld.plan_deleted, pi: ld.plan_inserted, diff: ld.plan_diff }));
+console.log("shadow plan rows", (await q("select count(*) from public.etl_shadow_plan"))[0].count, "| H-DAY FSI 19 Nov / 31 Dec:", JSON.stringify(await q("select date, value from public.etl_shadow_plan where contractor='PT FSI' and metric_group='H' and metric='DAY' and date in ('2026-11-18','2026-11-19','2026-12-31') order by date")));
+console.log("calendar history 19 Nov rows:", (await q("select count(*) from public.etl_history where tbl='tblCALENDAR' and row_date='2026-11-19'"))[0].count, "| H-DAY now", JSON.stringify(await q("select row_date, data->>'H-DAY' h, data->>'ST-DAY' st from public.etl_history where tbl='tblCALENDAR' and data->>'CONTRACTOR'='PT FSI' and row_date in ('2026-11-18','2026-11-19','2026-12-31') order by row_date")));
+const df = await C.shadowDiff(c, st.batch); console.log("shadow diff vs desktop rows", JSON.stringify(df.counts));
+const before = (await db.query("select md5(string_agg(t::text,'|' order by t::text)) h from (select date,site,pit,contractor,shift,category,metric_group,metric,value,text_value,source_file,loaded_at from prod_v2.fact_production_actual) t")).rows[0].h;
+console.log("prod_v2 rows still", (await db.query("select count(*) from prod_v2.fact_production_actual")).rows[0].count, "| shadow rows", (await db.query("select count(*) from public.etl_shadow_actual")).rows[0].count);
+const next = await C.readHistory(c, "2026-11-20", () => {}); console.log("history now has 19 Nov MNG rows:", next.tblRAWMNG.filter(r => String(r.DATE).startsWith("2026-11-19")).length);
+await C.undo(c, st.batch);
+console.log("after undo: shadow plan", (await q("select count(*) from public.etl_shadow_plan"))[0].count, "| calendar H-DAY 19 Nov", JSON.stringify(await q("select data->>'H-DAY' h from public.etl_history where tbl='tblCALENDAR' and data->>'CONTRACTOR'='PT FSI' and row_date='2026-11-19'")));
+// a viewer must be refused
+const v = await client("00000000-0000-0000-0000-000000000004").rpc("etl_history_summary"); console.log("viewer refused:", v.error?.message);
+await db.end(); process.exit(0);

@@ -2,10 +2,10 @@
 
 One installable web app (PWA) for a mining company: **one login** for production, exploration and head-office data across sites, with an offline-first Exploration data-entry app built in.
 
-- Live: https://opd-integrated.vercel.app
+- Live: https://technicalproductionportal.vercel.app
 - Repo: https://github.com/mmengineering-web/OPD-Integrated
 - Owner: Gera. Portfolio project (non-commercial), but built to be fully functional.
-- Last updated: 20 Nov 2026
+- Last updated: 24 Nov 2026
 
 > **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a password or a `.env` with secrets.
 

@@ -1,0 +1,477 @@
+{
+  "_comment": "Mapping config for the PT Bosowa Mining (Site Langgikima) Daily Report PDF -> Master_Data_Site_BM.xlsm (tblRAW* tables). Edit labels here instead of code.",
+  "site": "PT BOSOWA MINING",
+  "site_code": "BM",
+  "site_text_must_contain": "BOSOWA",
+  "shift": "ALL",
+  "contractor_map": {
+    "PT. ABEP": "PT AJB",
+    "PT.ABEP": "PT AJB",
+    "PT ABEP": "PT AJB",
+    "ABEP": "PT AJB",
+    "PT. ABEB": "PT AJB",
+    "PT.ABEB": "PT AJB",
+    "PT ABEB": "PT AJB",
+    "ABEB": "PT AJB",
+    "PT. AJB": "PT AJB",
+    "PT.AJB": "PT AJB",
+    "PT AJB": "PT AJB",
+    "AJB": "PT AJB",
+    "PT. SLS": "PT SLS",
+    "PT.SLS": "PT SLS",
+    "PT SLS": "PT SLS",
+    "SLS": "PT SLS",
+    "PT. SHES": "PT SHES",
+    "PT.SHES": "PT SHES",
+    "PT SHES": "PT SHES",
+    "SHES": "PT SHES",
+    "PT. BM": "PT BM",
+    "PT.BM": "PT BM",
+    "PT BM": "PT BM",
+    "BM": "PT BM",
+    "BOSOWA": "PT BM",
+    "PT. BSW": "PT BM",
+    "PT BSW": "PT BM",
+    "BSW": "PT BM"
+  },
+  "contractors": [
+    "PT AJB",
+    "PT SLS",
+    "PT SHES"
+  ],
+  "_hse_note": "Columns of each period block, left to right. FC (Fire Case) is not in the report; hse_fixed writes it as 0 like the manual entries.",
+  "hse_periods": {
+    "Day": "DAILY",
+    "WEEKLY": "WEEKLY",
+    "MONTHLY": "MONTHLY",
+    "YEARLY": "YEARLY"
+  },
+  "hse_contractor_headers": [
+    "PT. BM",
+    "PT. AJB",
+    "PT. SLS",
+    "SHES"
+  ],
+  "hse_categories": {
+    "Fatality": "FATALITY",
+    "Medical Treatment Injury": "MTI",
+    "Lost Time Injury": "LTI",
+    "First Aid Injury": "FAI",
+    "Property Damage": "PD",
+    "Nermis": "NM",
+    "Enviro Case": "EC"
+  },
+  "hse_fixed": {
+    "FC": 0
+  },
+  "_hazard_note": "The BM report has no hazard list. The master keeps one row per day with '-' in every text field; hazard_placeholder = true stages that row.",
+  "hazard_placeholder": true,
+  "_mining_note": "contractor_headers = left-to-right column order inside each period block (the header text runs together in the PDF and is spelled ABEP/ABEB, so the order is fixed here and checked by the cell count of the plan row).",
+  "mining_table": {
+    "rows": {
+      "TargetORE": "PLAN",
+      "OreSap": "H",
+      "Ore Lim": "L",
+      "Soil": "S",
+      "Overburden": "OB",
+      "Quary": "Q"
+    },
+    "plan_row": "TargetORE",
+    "periods": [
+      "DAY",
+      "WEEK",
+      "MONTH",
+      "YEAR"
+    ],
+    "contractor_headers": [
+      "PT AJB",
+      "PT SLS",
+      "PT SHES",
+      "TOTAL"
+    ],
+    "right_of_table": "DAILY PRODUCTION",
+    "max_x": 512
+  },
+  "mng_all_pit_label": "All",
+  "_mng_note": "One 'All' row per contractor carries OB/Q/S (from the table DAY block); one row per pit carries H (SAP) or L (LIM) from the PRODUCTION PIT chart. Pit rows are only written when the bar is > 0.",
+  "mng_all_row_cols": [
+    "S",
+    "OB",
+    "Q"
+  ],
+  "pit_chart": {
+    "title": "PRODUCTION PIT (WMT)",
+    "max_x": 410,
+    "first_centre": 49.0,
+    "pitch": 22.75,
+    "max_dx": 9,
+    "label_signature": "PIT 6 LIMPIT 6 SAPPIT 7 LIMPIT 7 SAPPit 1,3,4 LimPIT 1,3,4 PIT  A3 LIMPIT  A3 SAPPIT  G LIMPIT  G SAPPIT A LIMWINSTONRAMADHANRAMADHANPIT  D LIMPIT  D SAPLIMSAP",
+    "_categories_note": "Left-to-right bars. pit = value written to PIT (as in tblIDPIT / history: 6 and 7 are numbers). class H = saprolite (SAP), L = limonite (LIM). 'PIT 1,3,4' and 'WINSTON' have no class in the label; history keys them as SAP (H).",
+    "categories": [
+      {
+        "label": "PIT 6 LIM",
+        "pit": 6,
+        "class": "L"
+      },
+      {
+        "label": "PIT 6 SAP",
+        "pit": 6,
+        "class": "H"
+      },
+      {
+        "label": "PIT 7 LIM",
+        "pit": 7,
+        "class": "L"
+      },
+      {
+        "label": "PIT 7 SAP",
+        "pit": 7,
+        "class": "H"
+      },
+      {
+        "label": "PIT 1,3,4 LIM",
+        "pit": "1, 3, 4",
+        "class": "L"
+      },
+      {
+        "label": "PIT 1,3,4 SAP",
+        "pit": "1, 3, 4",
+        "class": "H"
+      },
+      {
+        "label": "PIT A3 LIM",
+        "pit": "A3",
+        "class": "L"
+      },
+      {
+        "label": "PIT A3 SAP",
+        "pit": "A3",
+        "class": "H"
+      },
+      {
+        "label": "PIT G LIM",
+        "pit": "G",
+        "class": "L"
+      },
+      {
+        "label": "PIT G SAP",
+        "pit": "G",
+        "class": "H"
+      },
+      {
+        "label": "PIT A LIM",
+        "pit": "A",
+        "class": "L"
+      },
+      {
+        "label": "WINSTON SAP",
+        "pit": "WINSTON",
+        "class": "H"
+      },
+      {
+        "label": "RAMADHAN LIM",
+        "pit": "RAMADHAN",
+        "class": "L"
+      },
+      {
+        "label": "RAMADHAN SAP",
+        "pit": "RAMADHAN",
+        "class": "H"
+      },
+      {
+        "label": "PIT D LIM",
+        "pit": "D",
+        "class": "L"
+      },
+      {
+        "label": "PIT D SAP",
+        "pit": "D",
+        "class": "H"
+      }
+    ]
+  },
+  "_pit_owner_note": "Pit -> contractor. Pits not listed here take the contractor of their latest row in tblRAWMNG; pits with no history (6, A, D in Sep-2026) are matched each day to the contractor whose OreSap/Ore Lim DAY in the table is still unexplained.",
+  "pit_contractor_override": {},
+  "stock": {
+    "blocks": {
+      "ORE STOCK PT ABEP": "PT AJB",
+      "ORE STOCK PT SLS": "PT SLS",
+      "ORE STOCK PT SHES": "PT SHES"
+    },
+    "rows": {
+      "Saprolit": "H",
+      "Limonit": "L"
+    },
+    "grades": [
+      "Ni",
+      "Fe",
+      "Co",
+      "MgO",
+      "SiO2"
+    ],
+    "max_x": 368
+  },
+  "hauling_chart": {
+    "title": "HAULING TO EFO",
+    "categories": [
+      "AJB",
+      "SLS",
+      "SHES"
+    ]
+  },
+  "sales": {
+    "first_row": "TARGET SALE",
+    "periods": [
+      "WEEK",
+      "MONTH",
+      "YEAR"
+    ],
+    "rows": [
+      "TARGET SALE (WMT)",
+      "ACTUAL SALE (WMT)",
+      "ACHIEVEMENT (%)"
+    ],
+    "max_x": 370
+  },
+  "shipment_chart": {
+    "title": "TOTAL SHIPMENT",
+    "categories": [
+      "DAY",
+      "WEEK",
+      "MONTH",
+      "YEAR"
+    ],
+    "max_x": 500
+  },
+  "ship_contractors": [
+    "PT AJB",
+    "PT SLS",
+    "PT SHES"
+  ],
+  "_ship_sync_note": "SHIP follows BARGE (same rule as WKM). Barge contractors ABEP / ABEB / AJB all map to PT AJB through contractor_map. Changes to days already in the master OVERWRITE the master by default (WARN); the user can set Leave per row in the Ship updates tab. Older mismatches default to stale_default.",
+  "ship_sync": {
+    "enabled": true,
+    "scan_months_back": 1,
+    "stale_default": "Leave"
+  },
+  "barges": {
+    "header_anchor": "NO SI",
+    "max_x": 500,
+    "_bands_note": "Start-x of each cell relative to the start-x of the 'NO SI' header (cells overlap, so each PDF text object is placed by where it starts).",
+    "bands": {
+      "si": [
+        -20,
+        15
+      ],
+      "vessel": [
+        15,
+        90
+      ],
+      "contractor": [
+        90,
+        124
+      ],
+      "start": [
+        124,
+        165
+      ],
+      "finish": [
+        165,
+        205
+      ],
+      "plan_cap": [
+        205,
+        248
+      ],
+      "actual_cap": [
+        248,
+        290
+      ],
+      "grade_plan": [
+        290,
+        330
+      ],
+      "grade_act": [
+        330,
+        365
+      ],
+      "status": [
+        365,
+        405
+      ],
+      "material": [
+        405,
+        435
+      ],
+      "destination": [
+        435,
+        470
+      ]
+    }
+  },
+  "barge_status_map": {
+    "COMPLITE": "Completed",
+    "COMPLETE": "Completed",
+    "COMPLETED": "Completed",
+    "COUNTINUE": "Continue",
+    "CONTINUE": "Continue",
+    "LOADING": "Loading",
+    "SAILING": "Sailing",
+    "UNLOADING": "Unloading",
+    "STANDBY": "Standby",
+    "TBI": "TBI"
+  },
+  "barge_stage_mode": "update_all",
+  "_barge_match_note": "SI numbers are matched ignoring leading zeros (PDF 022-ABEP = master 22-ABEP); the master spelling is kept. A master vessel name that is the upper-case start of the PDF name (truncated when keyed) is kept.",
+  "equipment": {
+    "unit_perf_title": "UNIT PERFORMANCE",
+    "max_x": 305,
+    "columns": {
+      "PC 200": "EXC1",
+      "PC 300": "EXC2",
+      "BREAKER": "BREAKER",
+      "DOZER": "DOZER",
+      "GRADER": "GRADER",
+      "COMPAC": "COMPAC",
+      "DT": "DT",
+      "WT": "WT",
+      "FT": "FT",
+      "LV": "LV"
+    },
+    "rows": {
+      "Population": "P",
+      "Operation": "OP",
+      "Standby Unit": "S",
+      "Breakdown": "B"
+    }
+  },
+  "_eq_zero_fill_note": "Columns written as 0 when the report shows '-' or has no such column (as keyed by hand). EXC3 is left blank.",
+  "eq_zero_fill": [
+    "EXC1",
+    "EXC2",
+    "DT",
+    "DOZER",
+    "BREAKER",
+    "GRADER",
+    "COMPAC",
+    "FT",
+    "WT",
+    "LV",
+    "LT",
+    "ADT"
+  ],
+  "unit_perf": {
+    "title": "UNIT PERFORMANCE",
+    "stop_at": "FUELCONSUMTION",
+    "min_x": 330,
+    "columns": [
+      "PA%",
+      "MA%",
+      "UA%",
+      "EU%"
+    ],
+    "rows": {
+      "EXCA": "EXC",
+      "DT": "DT",
+      "DZ": "DZ",
+      "GD": "GD",
+      "CP": "CP"
+    }
+  },
+  "_up_note": "up_all_zero: blank = a unit class with every KPI 0% (no unit working) is left blank (WKM rule); zero = write 0 as keyed by hand up to Sep-2026.",
+  "up_all_zero": "blank",
+  "unit_perf_rows": {
+    "EXCA": "EXC",
+    "DT": "DT",
+    "DZ": "DZ",
+    "GD": "GD",
+    "CP": "CP"
+  },
+  "fuel": {
+    "title": "FUELCONSUMTION",
+    "columns": [
+      "DAY",
+      "WEEK",
+      "MONTH",
+      "STOCK"
+    ]
+  },
+  "_fuel_note": "STOCK ADD is derived so the master STOCK chain equals the PDF STOCK: ADD = PDF STOCK - (previous STOCK - DAY). No receipt -> STOCK ADD left blank (as keyed).",
+  "fuel_zero_add_blank": true,
+  "manpower": {
+    "columns": [
+      "ADD",
+      "RESIGN",
+      "TOTAL",
+      "MANAGER",
+      "SPT",
+      "SPV",
+      "DRIVER",
+      "OPERATOR",
+      "ETC"
+    ],
+    "company_prefixes": [
+      "PT",
+      "BOSOWA"
+    ]
+  },
+  "_mp_note": "BOSOWA prints only TOTAL; when every category is '-' and TOTAL > 0 the TOTAL is written to ETC (as keyed by hand).",
+  "mp_total_to_etc_when_blank": true,
+  "weather": {
+    "ewh_title": "EFFEKTIVE WORKING HOURS",
+    "rain_title": "RAIN DURATION"
+  },
+  "tolerance_abs": 1.0,
+  "tolerance_rel": 0.0005,
+  "plan_check": {
+    "_note": "Plan in the report vs tblCALENDAR (read only). TargetORE DAY/WEEK/MONTH/YEAR -> H-DAY/WTD/MTD/YTD; TARGET SALE WEEK/MONTH/YEAR -> ST-WTD/MTD/YTD. The report prints whole numbers (666.67 -> 666), hence tolerance 1.",
+    "enabled": true,
+    "calendar_table": "tblCALENDAR",
+    "tolerance_abs": 1.0,
+    "contractors": [
+      "PT AJB",
+      "PT SLS",
+      "PT SHES"
+    ],
+    "production_rows": {
+      "PLAN ORE": "H"
+    },
+    "production_periods": {
+      "DAY": "DAY",
+      "WEEK": "WTD",
+      "MONTH": "MTD",
+      "YEAR": "YTD"
+    },
+    "sale_row": "TARGET SALE (WMT)",
+    "sale_prefix": "ST",
+    "sale_periods": {
+      "WEEK": "WTD",
+      "MONTH": "MTD",
+      "YEAR": "YTD"
+    }
+  },
+  "tables_staged": [
+    "tblRAWHSE",
+    "tblRAWHAZARD",
+    "tblRAWMNG",
+    "tblRAWSTOCK",
+    "tblRAWHAUL",
+    "tblRAWSHIP",
+    "tblRAWBARGE",
+    "tblRAWEQ",
+    "tblRAWUP",
+    "tblRAWWEWH",
+    "tblRAWFUEL",
+    "tblRAWMP"
+  ],
+  "tables_not_staged": {
+    "tblRAWLAB": "no laboratory section in the BM report",
+    "tblRAWCONS": "no construction section in the BM report",
+    "tblRAWEXPLO": "no exploration section in the BM report",
+    "tblRAWGEOMAP": "not in the BM report"
+  },
+  "barge_week": {
+    "start": 7,
+    "sign": -1
+  }
+}

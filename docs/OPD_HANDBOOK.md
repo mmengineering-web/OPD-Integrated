@@ -1,7 +1,7 @@
 # OPD Handbook: everything built so far, and what to do when a new site arrives
 
-Owner: Gera. Last updated: 23 Nov 2026. UI rules: `docs/UX_RULES.md`.
-Live app: https://opd-integrated.vercel.app. Repo: `mmengineering-web/OPD-Integrated`.
+Owner: Gera. Last updated: 24 Nov 2026. UI rules: `docs/UX_RULES.md`.
+Live app: https://technicalproductionportal.vercel.app (final address, decided 24 Nov 2026; `opd-integrated.vercel.app` is the former test address, do not give it to crews). Repo: `mmengineering-web/OPD-Integrated`.
 
 > **No secrets in this file or in the repo.** Only Supabase publishable (anon) keys are in the code. A service-role key exists only as an auto-injected secret inside each Edge Function. Passwords are never stored.
 
@@ -291,7 +291,6 @@ The stub (`tests/stub_supabase.mjs`) supports `functions.invoke`, `window.__fnDb
 8. Kepmen 363/2026 versus 144/2026: confirm which applies to the HPM calculator. Live HMA sheet check still open.
 9. Real-account cutover smoke test and real-phone tests (`docs/PHONE_TESTS.md`).
 10. Vercel Pro (or other host) before company use.
-11. `docs/OPD_CONTEXT.md` still names the old host (`explo-entry-next.vercel.app`); the live address is `opd-integrated.vercel.app`.
 
 ---
 

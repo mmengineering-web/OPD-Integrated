@@ -1,0 +1,444 @@
+{
+ "site_code": "TMS",
+ "site": "PT TAMBANG MATARAPE SEJAHTERA",
+ "shift": "ALL",
+ "pit_map": {
+  "ANOA": "APL"
+ },
+ "source_pit": "ANOA",
+ "contractor_mining": "PT VMM",
+ "contractor_site": "PT TMS",
+ "sheets": {
+  "production": "Production",
+  "summary": "Daily Report Huayou ",
+  "daily_report": "Daily Report",
+  "plan": "Plan",
+  "wewh_fleet": "SPO (DT Mining FIX)",
+  "other_fleets": [
+   "SPO (Exca MINING)",
+   "SPO (Exca Haul FIX)",
+   "SPO (DT Haul FIX)",
+   "SPO (DT Bar FIX)"
+  ],
+  "unit": "Unit"
+ },
+ "production_columns": {
+  "TOPSOIL_BCM": "NON-ORE / TOP SOIL / PIT ANOA TO SOIL BANK / VOLUME (BCM)",
+  "OB_BCM": "NON-ORE / WASTE / PIT ANOA TO WASTE DUMP / VOLUME (BCM)",
+  "IRONCAP_BCM": "NON-ORE / IRON CAP (PIT TO ROAD) / VOLUME (BCM)",
+  "QUARRY_BCM": "NON-ORE / QUARRY (PIT TO ROAD, JETTY, CAMP, ETC) / VOLUME (BCM)",
+  "QUARRY_T": "NON-ORE / QUARRY (PIT TO ROAD, JETTY, CAMP, ETC) / TONNAGE (TON)",
+  "SOIL_RECLAIM_BCM": "NON-ORE / TOP SOIL / SOIL BANK TO RECLAMATION / VOLUME (BCM)",
+  "LIM_MINED_T": "ORE MINING / TOTAL / LIMONITE / TONNAGE (TON)",
+  "SAP_MINED_T": "ORE MINING / TOTAL / SAPROLITE / TONNAGE (TON)",
+  "LIM_HAUL_T": "ORE HAULING / TOTAL / LIMONITE / TONNAGE (TON)",
+  "SAP_HAUL_T": "ORE HAULING / TOTAL / SAPROLITE / TONNAGE (TON)",
+  "LIM_BARGE_T": "ORE BARGING / TOTAL / LIMONITE / TONNAGE (TON)",
+  "SAP_BARGE_T": "ORE BARGING / TOTAL / SAPROLITE / TONNAGE (TON)",
+  "BARGE_COMPLETED_N": "ORE BARGING / BARGE COMPLETED / RITASE",
+  "BARGE_COMPLETED_T": "ORE BARGING / BARGE COMPLETED / TONNAGE (TON)",
+  "OB_TOTAL_BCM": "NON-ORE / WASTE / TOTAL OVERBURDEN / VOLUME (BCM)",
+  "LIM_MINED_BCM": "ORE MINING / TOTAL / LIMONITE / VOLUME (BCM)",
+  "SAP_MINED_BCM": "ORE MINING / TOTAL / SAPROLITE / VOLUME (BCM)"
+ },
+ "mng_map": {
+  "S-DAY": "TOPSOIL_BCM",
+  "OB-DAY": "OB_BCM",
+  "L-DAY": {
+   "src": "LIM_MINED_BCM",
+   "factor": "limonite"
+  },
+  "M-DAY": null,
+  "H-DAY": {
+   "src": "SAP_MINED_BCM",
+   "factor": "saprolite"
+  },
+  "Q-DAY": {
+   "src": "QUARRY_BCM",
+   "factor": "quarry"
+  }
+ },
+ "mng_zero_fill": [
+  "M-DAY"
+ ],
+ "haul_sources": [
+  "LIM_HAUL_T",
+  "SAP_HAUL_T"
+ ],
+ "ship_sources": [
+  "LIM_BARGE_T",
+  "SAP_BARGE_T"
+ ],
+ "round_decimals": 2,
+ "wewh_map": {
+  "EWH": [
+   "Total EWH"
+  ],
+  "RAIN HOUR": [
+   "SPO DELAY / Rain"
+  ],
+  "SLIPPERY": [
+   "SPO DELAY / Slippery"
+  ],
+  "DAILY MEETING (P5M)": [
+   "SPO DELAY / P5M (Shift Handover)"
+  ],
+  "GENERAL SAFETY TALK": [
+   "SPO DELAY / General Safety Talk"
+  ],
+  "FRIDAY PRAY": [
+   "SPO DELAY / Friday Pray"
+  ],
+  "REST & MEAL": [
+   "SPO DELAY / Rest & Meal"
+  ],
+  "REFUELLING & DAILY SERVICE (P2H)": [
+   "SPO DELAY / Refuelling & Daily Service"
+  ],
+  "RELOCATIONS": [
+   "SPO DELAY / Relocation / Moving Equipment"
+  ],
+  "PREPARE LOADING/DUMPING POINT": [
+   "SPO DELAY / Prepare Loading/Dumping Point/Stockpile"
+  ],
+  "SHIFT CHANGE": [
+   "SPO DELAY / Shift Change"
+  ],
+  "SURVEY & GC": [
+   "SPO DELAY / Survey & GC"
+  ],
+  "PREPARE TOWER LAMP": [
+   "SPO DELAY / Prepare Tower Lamp"
+  ],
+  "BREAK FASTING": [
+   "SPO DELAY / Break Fasting"
+  ],
+  "OTHERS": [
+   "SPO DELAY / Election Day",
+   "SPO DELAY / Public Holiday",
+   "NON-SPO DELAY / Total"
+  ]
+ },
+ "wewh_balance_tolerance_h": 0.05,
+ "stock_map": {
+  "ETO": {
+   "tonnage": "ETO-L-TONAGE",
+   "ni": "ETO-L-Ni"
+  },
+  "EFO": {
+   "tonnage": "EFO-L-TONAGE",
+   "ni": "EFO-L-Ni"
+  },
+  "TOS": null
+ },
+ "cons_category_fallback": {},
+ "cons_progress_scale": 100,
+ "factor_t_per_bcm": 1.6,
+ "tolerance_abs": 0.5,
+ "tolerance_rel": 0.0005,
+ "contractor_map": {
+  "PT TMS": "PT TMS",
+  "PT. TMS": "PT TMS",
+  "TMS": "PT TMS"
+ },
+ "barge_contractor": "PT TMS",
+ "barge_si_format": "{n:03d}-TMS",
+ "barge_stage_mode": "update_all",
+ "barge_late_finish_warn": false,
+ "barge_status_map": {
+  "COMPLETED": "Completed",
+  "LOADING": "Loading",
+  "TBI": "TBI",
+  "SAILING": "Sailing",
+  "UNLOADING": "Unloading",
+  "STANDBY": "Standby",
+  "CONTINUE": "Continue"
+ },
+ "tables_staged": [
+  "tblRAWMNG",
+  "tblRAWHAUL",
+  "tblRAWSHIP",
+  "tblRAWWEWH",
+  "tblRAWEQ",
+  "tblRAWFUEL",
+  "tblRAWSTOCK",
+  "tblRAWCONS",
+  "tblRAWHAZARD"
+ ],
+ "tables_not_staged": {
+  "tblRAWBARGE": "Only from the Realisasi Barging workbook (add it in step 2). The DPR has completed-barge tonnage but no SI / vessel / start date; see REVIEW_BARGE",
+  "tblRAWHSE": "No HSE section in DPR (master table holds WKM rows only)",
+  "tblRAWUP": "PA/MA/UA rows in DPR are blank/0",
+  "tblRAWMP": "No manpower section",
+  "tblRAWLAB": "No lab section",
+  "tblRAWEXPLO": "No exploration section"
+ },
+ "snapshot_tables": [
+  "tblRAWFUEL",
+  "tblRAWSTOCK",
+  "tblRAWCONS"
+ ],
+ "hazard_fill_suggestions": false,
+ "hazard_suggest_min": 0.6,
+ "_workflow": "Site DB -> HO DB workflow of 4 Nov 2026 (docs/TMS_SITE_TO_HO_WORKFLOW.md)",
+ "factors": {
+  "limonite": 1.6,
+  "saprolite": 1.55,
+  "quarry": 2.5
+ },
+ "eq_columns": {
+  "OP-DT": {
+   "col": "U",
+   "expect": {
+    "U": [
+     "DUMP TRUCK",
+     "TE CHECK"
+    ]
+   }
+  },
+  "OP-EXC1": {
+   "col": "BC",
+   "expect": {
+    "BC": [
+     "EXCAVATOR",
+     "TE CHECK"
+    ],
+    "BB": [
+     "40 Ton"
+    ]
+   }
+  },
+  "OP-EXC2": {
+   "col": "AM",
+   "expect": {
+    "AM": [
+     "EXCAVATOR",
+     "TE CHECK"
+    ],
+    "AL": [
+     "30 Ton"
+    ]
+   }
+  },
+  "OP-EXC3": {
+   "col": "AD",
+   "expect": {
+    "AD": [
+     "EXCAVATOR",
+     "TE CHECK"
+    ],
+    "AC": [
+     "20 Ton"
+    ]
+   }
+  },
+  "OP-BREAKER": {
+   "col": "BM",
+   "expect": {
+    "BM": [
+     "BREAKER"
+    ]
+   }
+  },
+  "OP-DOZER": {
+   "col": "BN",
+   "expect": {
+    "BN": [
+     "DOZER"
+    ]
+   }
+  },
+  "OP-GRADER": {
+   "col": "BO",
+   "expect": {
+    "BO": [
+     "GRADER"
+    ]
+   }
+  },
+  "OP-COMPAC": {
+   "col": "BP",
+   "expect": {
+    "BP": [
+     "COMPACTOR"
+    ]
+   }
+  },
+  "OP-WT": {
+   "col": "BR",
+   "expect": {
+    "BR": [
+     "WATER TRUCK"
+    ]
+   }
+  },
+  "OP-FT": {
+   "col": "BS",
+   "expect": {
+    "BS": [
+     "FUEL TRUCK"
+    ]
+   }
+  }
+ },
+ "eq_zero_fill": [
+  "S-EXC1",
+  "S-EXC2",
+  "S-EXC3",
+  "S-DT",
+  "S-DOZER",
+  "S-BREAKER",
+  "S-GRADER",
+  "S-COMPAC",
+  "S-FT",
+  "S-WT",
+  "B-EXC1",
+  "B-EXC2",
+  "B-EXC3",
+  "B-DT",
+  "B-DOZER",
+  "B-BREAKER",
+  "B-GRADER",
+  "B-COMPAC",
+  "B-FT",
+  "B-WT"
+ ],
+ "eq_te_checks": {
+  "Dump truck PIT": {
+   "te": "I",
+   "parts": [
+    "F",
+    "G",
+    "H"
+   ]
+  }
+ },
+ "barge_sheets": {
+  "VMM": {
+   "contractor": "PT VMM",
+   "si_format": "{n:03d}-TMS",
+   "_note": "continues 001-022-TMS already in the master (those were VMM trips)"
+  },
+  "FMI": {
+   "contractor": "PT FMI",
+   "si_format": "{n:03d}-FMI"
+  }
+ },
+ "stock_from_dpr": false,
+ "_stock_note": "10 Nov 2026: tblRAWSTOCK comes from the stock dome register (tms_stock.py), one row per contractor, ore class by dome Ni as in DAILY REPORT section 4. The DPR stockpile block (old stock_map, all into ETO-L/EFO-L as PT TMS) is a cross-check only while stock_from_dpr is false.",
+ "stock_register": {
+  "sheets": {
+   "VMM": "PT VMM",
+   "FMI": "PT FMI"
+  },
+  "classes": [
+   {
+    "code": "H",
+    "label": "HGO",
+    "min": 1.9
+   },
+   {
+    "code": "M",
+    "label": "MGO",
+    "min": 1.7
+   },
+   {
+    "code": "L",
+    "label": "LGO A",
+    "min": 1.5
+   },
+   {
+    "code": "LB",
+    "label": "LGO B",
+    "min": null
+   }
+  ],
+  "products": {
+   "ETO": "ETO",
+   "EFO": "EFO",
+   "TOS": null
+  },
+  "tonnage_preference": [
+   "SURVEY",
+   "TON",
+   "TC"
+  ],
+  "waiting_survey_status": [
+   "WAITING SURVEY"
+  ],
+  "ranges": {
+   "Ni": [
+    0.3,
+    4.0
+   ],
+   "Fe": [
+    3,
+    65
+   ],
+   "SiO2": [
+    0.3,
+    70
+   ],
+   "MgO": [
+    0.05,
+    45
+   ],
+   "Co": [
+    0.005,
+    0.6
+   ],
+   "Al2O3": [
+    0.1,
+    30
+   ],
+   "CaO": [
+    0,
+    5
+   ],
+   "Cr2O3": [
+    0.1,
+    10
+   ],
+   "MnO": [
+    0,
+    5
+   ],
+   "SM": [
+    0.01,
+    300
+   ]
+  },
+  "sm_tolerance_rel": 0.05,
+  "shift_drop": [
+   "SiO2",
+   "MgO",
+   "Co",
+   "SM",
+   "Al2O3",
+   "CaO",
+   "Cr2O3",
+   "MnO"
+  ],
+  "total_tolerance_t": 1.0
+ },
+ "load_match_cols": {
+  "tblRAWSTOCK": [
+   "CONTRACTOR"
+  ]
+ },
+ "barge_week": {
+  "start": 1,
+  "sign": -1
+ },
+ "fact_skip_metrics": [
+  "DTOT",
+  "WTOT",
+  "MTOT",
+  "YTOT",
+  "DALL",
+  "WALL",
+  "MALL",
+  "YALL"
+ ],
+ "_fact_skip_note": "TMS prod_v2 holds only DAY/WTD/MTD/YTD (and ROWID) of MNG and SHIP: the TOT/ALL helper columns of the master are not in the fact table (checked 9 Nov 2026: MNG 24 = 6 groups x 4, SHIP 5)."
+}

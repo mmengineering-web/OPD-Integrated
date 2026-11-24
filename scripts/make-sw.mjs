@@ -14,7 +14,7 @@ const files = [];
   }
 })(OUT);
 
-const skip = /(^|\/)(sw\.js|.*\.map|_not-found.*|404.*)$/;
+const skip = /(^|\/)(sw\.js|.*\.map|_not-found.*|404.*|etl\/.*)$/;   // the report reader (public/etl, about 7 MB) is fetched when the Upload page opens, not stored on every phone
 const urls = files.map(f => "/" + relative(OUT, f).split("\\").join("/")).filter(u => !skip.test(u));
 // directory index pages are requested as "/"
 const list = [...new Set(["/", ...urls.map(u => u.replace(/index\.html$/, ""))])].sort();
