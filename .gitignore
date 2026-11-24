@@ -40,3 +40,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 out-test
+
+# data and secrets that must never be committed
+*.ndjson
+*.xlsm
+*.xlsx
+*.docx
+*.sqlite
+.env*
+!.env.example
+__pycache__/
+*.pyc
+live-smoke/
+out-test/
+*.log

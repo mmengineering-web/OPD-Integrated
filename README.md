@@ -5,9 +5,9 @@ One installable web app (PWA) for a mining company: **one login** for production
 - Live: https://technicalproductionportal.vercel.app
 - Repo: https://github.com/mmengineering-web/OPD-Integrated
 - Owner: Gera. Portfolio project (non-commercial), but built to be fully functional.
-- Last updated: 24 Nov 2026
+- Version: **4.4.0** (Phase 4, step 4.4; Python reader `public/etl/manifest.json` 4.4-5). Last updated: 24 Nov 2026
 
-> **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a password or a `.env` with secrets.
+> **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a database connection string, a password, a `.env`, or any site data (master workbooks, `*.ndjson` dumps, daily reports). `.gitignore` blocks the common ones. Site data and user names must stay out of this public repo.
 
 ---
 
@@ -42,7 +42,7 @@ Mining operations produce data in separate places: daily production reports, dri
 |---|---|
 | **Portal** | One sign-in. Tiles per site and module (Production, Exploration), greyed out where the person has no usable account. |
 | **Exploration** | Offline-first field data entry (collars, drilling progress, distribution hours, samples), import, reports, dashboard, data QC, map, 3D drill holes. |
-| **Production** | Planned (Phase 4): browser-side parsing of daily reports for WKM, BM and TMS into `etl_*` tables. |
+| **Production** | Dashboard (Looker), guides, and **Uploads** (Phase 4): the site's daily file is read in the browser and loaded into `etl_*` tables. WKM and BM: Daily Report PDF. TMS: Daily Production Report `.xlsx`, Realisasi Barging `.xlsx`, stock register `.xlsx`, hazard inspection `.docx`. Test mode (shadow) until the owner switches a site live. See `docs/OPD_UPLOAD_MODULE.md`. |
 | **Head office / Hub** | Planned (Phase 5): all-sites view, documents, tools, help. |
 
 Sites in scope: WKM, CDSM, BM, TMS, IBN, TPB, AJB, CDS. Only WKM and CDSM have an exploration project today; BM, TMS and WKM have production projects. The rest show as "Planned" on the home page.
@@ -56,10 +56,12 @@ Sites in scope: WKM, CDSM, BM, TMS, IBN, TPB, AJB, CDS. Only WKM and CDSM have a
 | 1 | Login foundation: `/login/`, portal, `/explo/`, legacy bridge, service worker, security headers. Redesign: Laterite/Strata palette, public landing page, interactive hero deck, mobile fixes, breadcrumbs. | **Done** |
 | 2 | Exploration uses the portal session (`attachSession`), site switcher, guest mode kept, portal sign-out clears Exploration server data, Portal › Exploration breadcrumb. | **Built and tested on the fake backend** (real-account and phone tests still open) |
 | 3 | Cutover: same address, data stays on phones. See `docs/CUTOVER.md`. | Prepared |
-| 4 | Production upload: browser-side parsers for WKM/BM/TMS, `etl_*` tables and functions, 20-day shadow run. | Planned |
+| 4 | Production upload without Excel: browser-side parsers (Pyodide) for WKM/BM/TMS, `etl_01` to `etl_05` SQL, shadow (test) mode, compare, undo. Steps 4.1 to 4.4 built; 4.5 (compare week and go-live per site) not started. | **Built, test mode** (compare week next) |
 | 5 | Hub / All sites, documents, tools, help. | Planned |
 
-Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px today), a Phase 1 doc mention of the hero deck.
+Phase 4 detail and the per-step status are in `docs/PHASE4_EXCEL_FREE_DESIGN.md`; the operator and admin guide is `docs/OPD_UPLOAD_MODULE.md`.
+
+Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px today).
 
 ---
 
@@ -75,6 +77,7 @@ Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px 
 | Backend | Supabase (`@supabase/supabase-js` 2): Auth, Postgres with RLS, Storage, one Edge Function |
 | Maps and charts | Leaflet 1.9.4, Chart.js, shpjs (all vendored in `public/vendor/`) |
 | Documents | jsPDF, pdf.js, SheetJS mini (vendored) |
+| Upload reader | Pyodide 0.27.2 (Python in a web worker; pdfplumber, openpyxl, python-docx) loaded from `public/etl/` on first use |
 | 3D | three.js + react-three-fiber (lazy chunk, only when the 3D tab opens) |
 | Hosting | Vercel (static `out/` folder) |
 | PWA | Custom service worker generated after build, web app manifest |
@@ -90,7 +93,7 @@ Optional follow-ups: mobile menu for the landing nav links (hidden under 768 px 
 | `/portal/` | Signed-in home | Module and site tiles. Signed out, it redirects to `/login/?next=/portal/`. |
 | `/explo/` | Exploration app | `?site=WKM` preselects the site. Guest mode available. |
 | `/production/` | Production hub (public landing) | Cards: Dashboard, Uploads, Guides. |
-| `/production/dashboard/`, `/production/data-inputs/`, `/production/guidelines/` | Production data pages | Login + a usable production account. Placeholders until Phase 4. |
+| `/production/dashboard/`, `/production/data-inputs/`, `/production/guidelines/` | Production data pages | Login + a usable production account. `data-inputs` is the Upload page (data entry and above, own site only). |
 | `/exploration/` | Exploration hub (public landing) | Cards: Field Data Entry (`/explo/`), Request Data, Interactive Maps. |
 | `/exploration/request-data/`, `/exploration/maps/` | Exploration data pages | Login + a usable exploration account. |
 | `/documents/` | Documents hub (public landing) | Cards: Reports, SOPs, Templates. |
@@ -274,12 +277,17 @@ Rules:
 ```
 OPD/
 ├─ README.md                    this file
-├─ docs/                        OPD_CONTEXT, OPD_PHASE1, CUTOVER, PHONE_TESTS
+├─ docs/                        handbook, context, upload module, Phase 4 design, cutover, phone tests, UX rules
+├─ supabase/
+│   ├─ sql/                     op_profile.sql, etl_01 to etl_05 (run per site project, in order)
+│   └─ functions/op-admin-users Edge Function (user administration)
 ├─ public/
+│   ├─ etl/                     upload reader: worker, manifest (version), Python parsers, site configs, wheels
 │   ├─ manifest.webmanifest
 │   ├─ sw.template.js           service worker source
 │   └─ vendor/                  Chart.js, jsPDF, pdf.js, SheetJS, shpjs, Leaflet
 ├─ scripts/make-sw.mjs          builds out/sw.js after next build
+├─ scripts/etl/                 desktop-side tools: seed_history.py, parity and formula checks (need local site masters, never committed)
 ├─ src/
 │   ├─ app/                     routes: page.tsx (/), login, portal, explo, layout, globals.css
 │   ├─ components/
@@ -289,7 +297,7 @@ OPD/
 │   ├─ fonts/                   Geist, Geist Mono, Newsreader (+ OFL license)
 │   └─ lib/
 │       ├─ boot.ts              lazy core() loader and openSite
-│       ├─ opd/                 auth-core, config, profile, session
+│       ├─ opd/                 auth-core, config, profile, session, admin-core, etl-client
 │       └─ core/                db, sync, validate, rules, defs, geo3d, dash/, qc/, lab/, roa/, map...
 ├─ tests/                       unit (.mjs), browser e2e (.mjs, .py), fake Supabase stub
 ├─ next.config.ts   vercel.json   package.json
@@ -317,9 +325,10 @@ Configuration: Supabase URL and publishable key per project in `src/lib/opd/conf
 
 | Test | Command | Covers |
 |---|---|---|
-| Unit | `npm run test:unit` | OPD auth (fan-out, roles, `safeNext`, portal model), rules evaluator, RoA/QC, dashboard calc, 3D geometry |
+| Unit | `npm run test:unit` | OPD auth (fan-out, roles, `safeNext`, portal model), rules evaluator, RoA/QC, dashboard calc, 3D geometry, admin, masks, upload client (`etl_client`) |
 | Portal e2e | `node tests/opd_e2e.mjs` | Public home, deck interactions, login, portal redirect, breadcrumbs, sign-out, offline paths |
 | Exploration e2e | `python3 tests/e2e.py`, `e2e_data.py`, `e2e_dash.py`, `e2e_forms.py`, `e2e_3d.py`, `e2e_sw.py` | Shell, forms, records, import, settings, dashboard, QC, map, 3D, service worker takeover |
+| ETL SQL | `tests/etl_*_test.sql` | Run on a scratch Postgres 16 (core, history, safety S1-S7) |
 | Live smoke | `python3 tests/live_smoke.py` | Read-only check of the real site; credentials from environment variables on your own computer |
 | Phones | `docs/PHONE_TESTS.md` | Android and iPhone checklist |
 
@@ -389,8 +398,8 @@ Vercel redeploys on each push.
 
 - A password that differs in one project looks like "no account" there; that module is greyed out.
 - Roles on the portal come from profile tables; RLS still decides what is allowed.
-- The production profile table shape (`op_profile`) is unconfirmed. The portal reads `user_id`, `role`, `active` or `is_active`, `name` or `full_name`. Until the SQL exists, production tiles may show "No profile".
-- Parser sample files for WKM, BM and TMS daily reports are needed for Phase 4.
+- The production profile table is `op_profile` (`supabase/sql/op_profile.sql`). A project without it shows "No profile".
+- Phase 4: compare week and go-live (step 4.5) not started. The preview is read-only; TMS hazard closures of earlier findings and TMS plan Replace are not built. First download of the reader is about 35 MB; not yet measured on site internet or a phone.
 - Explo Hub "All sites" tab: verify with a real hub account.
 - Only a fake backend has been exercised in automated tests. A real-account smoke test against the live projects, and real-phone tests, are still open.
 - Landing nav links are hidden under 768 px; a mobile menu is not built yet.
@@ -401,7 +410,11 @@ Vercel redeploys on each push.
 
 | File | Content |
 |---|---|
+| `docs/OPD_HANDBOOK.md` | One-page memory: projects, roles, setup per project, new-site checklist, troubleshooting |
 | `docs/OPD_CONTEXT.md` | Concept, decisions and memory |
-| `docs/OPD_PHASE1.md` | Phase 1 notes, home page and routes (v1.6) |
+| `docs/OPD_UPLOAD_MODULE.md` | Upload module: operator guide, architecture, test mode, go-live |
+| `docs/PHASE4_EXCEL_FREE_DESIGN.md` | Phase 4 design and per-step status |
+| `docs/SUPERADMIN_SETUP.md` | User administration setup per project |
+| `docs/UX_RULES.md` | UI rules |
 | `docs/CUTOVER.md` | Domain swap, rollback, retirement runbook |
 | `docs/PHONE_TESTS.md` | Phone test checklist and result table |

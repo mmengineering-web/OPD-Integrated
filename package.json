@@ -1,6 +1,6 @@
 {
-  "name": "exploration-next",
-  "version": "0.1.0",
+  "name": "opd-integrated",
+  "version": "4.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,3 +1,4 @@
+# NOTE: the .ndjson dump holds real site data and operator names. Keep it local, NEVER COMMIT it (.gitignore blocks *.ndjson).
 r"""Seed etl_history from a site master (.xlsm). Part of OPD Phase 4 (Excel-free daily report).
 
   set ETL_APP_DIR=C:\path\to\CAN_Daily_Report_ETL\app        (the folder that has dr_to_master.py; Linux/mac: export)

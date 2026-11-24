@@ -1,6 +1,6 @@
 # OPD Handbook: everything built so far, and what to do when a new site arrives
 
-Owner: Gera. Last updated: 24 Nov 2026. UI rules: `docs/UX_RULES.md`.
+Owner: Gera. Version 4.4.0. Last updated: 24 Nov 2026. UI rules: `docs/UX_RULES.md`.
 Live app: https://technicalproductionportal.vercel.app (final address, decided 24 Nov 2026; `opd-integrated.vercel.app` is the former test address, do not give it to crews). Repo: `mmengineering-web/OPD-Integrated`.
 
 > **No secrets in this file or in the repo.** Only Supabase publishable (anon) keys are in the code. A service-role key exists only as an auto-injected secret inside each Edge Function. Passwords are never stored.
@@ -285,7 +285,7 @@ The stub (`tests/stub_supabase.mjs`) supports `functions.invoke`, `window.__fnDb
 2. Does the Explo Hub dashboard treat `data_entry` differently from `viewer`? Unknown. Check the hub policies and functions.
 3. Per-site picker for Explo Hub members (`sites` array): offered, not built.
 4. (Done) Column separators in `users-admin.tsx` are now computed from the groups.
-5. Production Data Inputs (daily report upload, Phase 4): needs sample files for WKM, BM, TMS.
+5. Production Uploads (Phase 4) are built and run in test mode. Open: compare week and go-live per site (`docs/OPD_UPLOAD_MODULE.md`), `etl_05_hazard.sql` on TMS.
 6. Next tools: Drillhole Analysis, Hauling Cost, Revenue Projection.
 7. Dashboard Guideline PDF (12 MB) not yet added to Production Guidelines.
 8. Kepmen 363/2026 versus 144/2026: confirm which applies to the HPM calculator. Live HMA sheet check still open.
@@ -312,8 +312,9 @@ The stub (`tests/stub_supabase.mjs`) supports `functions.invoke`, `window.__fnDb
 | `README.md` | Full technical README (routes, architecture, tests, deploy) |
 | `docs/SUPERADMIN_SETUP.md` | Per-project setup and troubleshooting for user administration |
 | `docs/UX_RULES.md` | Colour meaning, masks, button wording, spacing, short labels, motion (scroll reveal, page wipe) |
-| `docs/OPD_CONTEXT.md` | Concept and memory (older) |
-| `docs/OPD_PHASE1.md` | Phase 1 notes |
+| `docs/OPD_CONTEXT.md` | Concept and memory |
+| `docs/OPD_UPLOAD_MODULE.md` | Upload module guide (Phase 4) |
+| `docs/PHASE4_EXCEL_FREE_DESIGN.md` | Phase 4 design and step status |
 | `docs/CUTOVER.md` | Domain swap, rollback, retirement runbook |
 | `docs/PHONE_TESTS.md` | Phone test checklist |
 | `supabase/sql/op_profile.sql` | Role table for production projects |

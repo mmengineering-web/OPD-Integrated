@@ -1,3 +1,4 @@
+# NOTE: the .ndjson dump holds real site data and operator names. Keep it local, NEVER COMMIT it (.gitignore blocks *.ndjson).
 r"""e2e_check.py - end-to-end proof, no Excel in the loop.
 
   py e2e_check.py WKM "Master Data Site WKM.xlsm" config_wkm.json schema_wkm.json wkm.ndjson "Daily Report 19 Nov.pdf"

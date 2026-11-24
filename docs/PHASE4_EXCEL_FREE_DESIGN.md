@@ -1,7 +1,7 @@
 # Phase 4 design: Daily Report upload without Excel
 
-Owner: Gera. Written: 24 Nov 2026. Status: **proposal, decisions in section 6 first.**
-Builds on `docs/ROADMAP.md` (Phase 4), `supabase/sql/etl_01_core.sql` (step 4.1, done), and the CAN Daily Report ETL v1.13.1.
+Owner: Gera. Written: 24 Nov 2026. Status: **steps 4.1 to 4.4 built (test mode). 4.5 compare week and go-live: not started.** Sections 2 to 7 are the original proposal; the step-status sections at the end are current.
+Builds on `supabase/sql/etl_01_core.sql` (step 4.1) and the CAN Daily Report ETL v1.13.1. Current operating guide: `docs/OPD_UPLOAD_MODULE.md`.
 
 ## 1. Goal
 
@@ -9,7 +9,7 @@ A site user drops the day's report (WKM PDF, BM PDF, TMS workbooks) into OPD. OP
 
 ## 2. What the proof showed (24 Nov 2026)
 
-Tool: `tools/parity_check.py`. It runs the existing parsers on a report, turns the staged `tblRAW*` rows into fact rows with the app's own export rules, and compares them with what the saved master exports for the same day. No Excel was used. It ran on Linux.
+Tool: `scripts/etl/parity_check.py`. It runs the existing parsers on a report, turns the staged `tblRAW*` rows into fact rows with the app's own export rules, and compares them with what the saved master exports for the same day. No Excel was used. It ran on Linux.
 
 | Site | Report | Rows from the report alone | Same key, same value | Different value | Missing from report alone |
 |---|---|---|---|---|---|
@@ -78,12 +78,12 @@ Replacement: a **history store in the site's Supabase project**, with the same c
 | Two writers (desktop step 5 and OPD) | Decision 4. Per-site switch date, then desktop step 5 off for that site |
 | Looker reads stored totals today | No change: stored totals stay, now equal to the DR |
 | Parser breaks on a changed layout | Unchanged by design: ERROR on that section, nothing loaded from it |
-| Single maintainer | `tools/parity_check.py` and per-adapter tests stay in the repo |
+| Single maintainer | `scripts/etl/parity_check.py` and per-adapter tests stay in the repo |
 
 
 ## Step 4.2a status (history store)
 - `supabase/sql/etl_02_history.sql`: `etl_history`, `etl_staging_raw`, `etl_history_read`, `etl_history_summary`, `etl_stage_raw`, and `etl_load` / `etl_undo` replaced to write and restore history. Tests H1-H9 and T1-T15 pass on Postgres 16.
-- `tools/seed_history.py`: dumps all `tblRAW*`, vocab and `tblCALENDAR` rows of a master to NDJSON, optionally loads them (connection string from `OPD_DB_URL` only, never printed). Refuses a second seed and a wrong site.
+- `scripts/etl/seed_history.py`: dumps all `tblRAW*`, vocab and `tblCALENDAR` rows of a master to NDJSON, optionally loads them (connection string from `OPD_DB_URL` only, never printed). Refuses a second seed and a wrong site.
 - Seed source is the three site masters. The HO file `Master Database HO - New` holds only EAV query outputs, no `tblRAW*` tables.
 - Barge list: rows with no FINISHDATE (open barges) are stored with `row_date` null and always returned by `etl_history_read`. Merge rules come in 4.3.
 
@@ -141,3 +141,6 @@ Open: the first real new-day report (WKM 20 Nov); preview editing; TMS (4.4); co
 The desktop TMS reader (tms_adapter / tms_to_master / tms_dpr_parser) runs unchanged in Pyodide through the same history-backed master as WKM/BM; formulas by opd_formulas
 (validated on all 195 TMS MNG rows and the other tables). Page: kind "tms" reads .xlsx. Hazard (.docx, closures update older rows), Realisasi Barging and the stock register are staged by the same
 modules but are refused for now until their load path (history update of old rows, barge merge by SI, stock per contractor) is tested: steps 4.4b / 4.4c.
+
+## Step 4.4b to 4.4f status (24 Nov 2026): TMS complete in test mode
+TMS now reads four file types: DPR, Realisasi Barging, stock dome register and hazard `.docx` (`etl_05_hazard.sql` needed on TMS). `fact_skip_metrics` drops TOT/ALL helper metrics that prod_v2 does not hold. Reader version 4.4-5. Details: `docs/OPD_UPLOAD_MODULE.md`. Open: hazard closures of earlier findings, TMS plan Replace, editable preview.

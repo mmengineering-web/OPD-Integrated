@@ -1,6 +1,6 @@
 # One Portal Data (OPD): concept, context and memory
 
-Last updated: 20 Nov 2026. Owner: Gera. Portfolio project (non-commercial), but it must be fully functional.
+Last updated: 24 Nov 2026 (version 4.4.0). Owner: Gera. Portfolio project (non-commercial), but it must be fully functional.
 Keys are NOT stored in this file. Publishable (anon) keys live in `src/lib/opd/config.js` and `src/lib/core/config.js`. Never commit a service-role key or a password.
 
 ## 1. What OPD is
@@ -38,9 +38,9 @@ Planned exploration sites (BM, TMS, IBN, TPB, AJB, CDS) have no project yet.
 
 ## 6. Phases
 1. DONE: login foundation (`/login/`, portal home, `/explo/`, legacy bridge, SW, headers).
-2. NEXT: Exploration uses the portal session (`attachSession`), site switcher, guest mode kept, portal sign-out clears Exploration server data.
-3. Cutover (same address, data stays).
-4. Production upload: browser-side parsing, `etl_*` tables/functions (`docs/DB_CONTRACT.md`), parsers for WKM/BM/TMS, 20-day shadow run.
+2. DONE (built, fake backend tested): Exploration uses the portal session (`attachSession`), site switcher, guest mode kept, portal sign-out clears Exploration server data.
+3. Cutover (same address, data stays): prepared, `docs/CUTOVER.md`.
+4. BUILT, TEST MODE: production upload without Excel. Browser-side parsing (Pyodide), `etl_01` to `etl_05` (`supabase/sql`), WKM/BM PDF and TMS xlsx/docx, shadow mode. Design `docs/PHASE4_EXCEL_FREE_DESIGN.md`, guide `docs/OPD_UPLOAD_MODULE.md`. Next: 4.5 compare week and go-live (TMS, then BM, then WKM).
 5. Hub / All sites, documents, tools, help.
 
 ## 7. Decisions and constraints (memory)
@@ -52,7 +52,7 @@ Planned exploration sites (BM, TMS, IBN, TPB, AJB, CDS) have no project yet.
 
 ## 8. Open items
 - Production profile table shape (`op_profile`) unconfirmed; the portal reads `user_id, role, active/is_active, name/full_name`. Until the SQL exists production tiles may show "No profile".
-- Parser sample files for WKM/BM/TMS daily reports (Phase 4).
+- Phase 4: start day for the compare week; run `etl_05_hazard.sql` on TMS; site fixes for the FMI barging Ke-24 duplicate and two stock cells; Supabase billing and Vercel Hobby terms.
 - Explo Hub "All sites" tab is now enabled by the hub key; verify it with a real hub account.
 - Real-account smoke test of the login against the live projects (only the fake backend has been run).
 
