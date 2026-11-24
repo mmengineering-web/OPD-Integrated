@@ -1,7 +1,7 @@
+out-test
 node_modules
 .next
-out-test
 tests
-scripts
 docs
 supabase
+scripts/etl
