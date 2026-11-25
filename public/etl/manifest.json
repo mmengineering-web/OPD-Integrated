@@ -1,5 +1,5 @@
 {
- "version": "4.4-5",
+ "version": "4.4-6",
  "python": [
   "dr_pdf_parser.py",
   "dr_to_master.py",

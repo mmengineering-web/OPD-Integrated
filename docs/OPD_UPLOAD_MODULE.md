@@ -10,7 +10,7 @@ A Data entry, Site admin or Super admin user opens **Production > Uploads** (`/p
 | WKM, BM | Daily Report PDF (also barge list, plan check/Replace, ship updates of earlier days) | MNG, HSE, HAUL, SHIP, FUEL, EQ, MP, STOCK ... (per site config), barge list |
 | TMS | Daily Production Report `.xlsx` | MNG, HAUL, SHIP, WEWH, EQ, FUEL, CONS |
 | TMS | Realisasi Barging `.xlsx` (sheet VMM + sheet FMI) | barge list only |
-| TMS | Stock dome register `.xlsx` | STOCK (per contractor) |
+| TMS | Stock dome register `.xlsx` | STOCK (per contractor), only new or changed days (see section 6, Stock register) |
 | TMS | Laporan Inspeksi Harian `.docx` | HAZARD |
 
 ## 2. The daily routine (operator)

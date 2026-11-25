@@ -16,12 +16,13 @@ import * as ETL from "@/lib/opd/etl-client.js";
 type Row = { date: string; pit: string | null; contractor: string | null; shift: string | null; category: string; metric_group: string; metric: string; value: number | null; text_value: string | null };
 type Issue = { severity: string; date?: string; table?: string; check?: string; message: string; pdf_value?: number | null; master_value?: number | null; diff?: number | null };
 type BargeRow = { si: string; hist: Record<string, unknown>; old: Record<string, unknown> | null };
+type StockItem = { contractor: string; date: string; last_db_date: string | null; status: "new" | "changed" | "same"; changes: { col: string; old: number | null; new: number | null }[]; total: number; old_total: number | null; gap_days: number | null; loaded: boolean };
 type PlanChange = { contractor: string; column: string; old: number | null; new: number; from: string; to: string; days: number };
 type ShipUpdate = { decision: string; kind: string; date: string; contractor: string; old: number | null; new: number | null; diff: number | null; caused_by: string | null };
 type ShipCmp = { date: string; contractor: string; old: Record<string, number>; now: Record<string, number> };
 const SHIP_COLS = ["DAY", "WTD", "MTD", "YTD"] as const;
 type ShipOut = { rows: unknown[]; raw: Record<string, unknown[]>; changes: { date: string; contractor: string; old: number | null; new: number }[]; skipped: { DATE: string; CONTRACTOR: string; reason: string }[]; days: string[] };
-type Parsed = { ship_updates?: ShipUpdate[]; report_date: string; site: string; actual: Row[]; raw: Record<string, unknown[]>; barge?: BargeRow[]; plan?: { changes: PlanChange[]; days: string[]; groups: string[]; rows: unknown[]; raw: Record<string, unknown[]> } | null; log: Issue[]; summary: { rows: number; by_category: Record<string, number> } };
+type Parsed = { ship_updates?: ShipUpdate[]; report_date: string; site: string; actual: Row[]; raw: Record<string, unknown[]>; barge?: BargeRow[]; stock?: StockItem[]; plan?: { changes: PlanChange[]; days: string[]; groups: string[]; rows: unknown[]; raw: Record<string, unknown[]> } | null; log: Issue[]; summary: { rows: number; by_category: Record<string, number> } };
 type Target = { project: { id: string; site: string }; site: string; kind: string; role: string };
 type LoadResult = { target?: string; actual_inserted?: number; actual_deleted?: number };
 type Diff = { counts: { same: number; changed: number; only_portal: number; only_prod: number } };
@@ -137,7 +138,7 @@ function View({ access }: { access: Access }) {
       const bytes = await f.arrayBuffer();
       const pk = await reader.ask<{ report_date: string }>({ type: "peek", kind: t.kind, bytes: bytes.slice(0), name: f.name });
       setPhase("history"); setHist({ done: 0, total: 0 });
-      const history = await ETL.readHistory(client, pk.report_date, (done: number, total: number) => setHist({ done, total }));
+      const history = await ETL.readHistory(client, pk.report_date, (done: number, total: number) => setHist({ done, total }), { stockAll: t.kind === "tms" });
       setPhase("reading");
       const out = await reader.ask<Parsed>({ type: "parse", kind: t.kind, bytes, history, name: f.name });
       setTicked(Object.fromEntries((out.ship_updates ?? []).map((u) => [`${u.date}|${u.contractor}`, u.decision === "Apply"])));
@@ -315,6 +316,22 @@ function View({ access }: { access: Access }) {
                   })}</tbody></table>
               </div>
               <p className="text-xs text-muted-foreground">Week, month, year and the running totals are recalculated for the whole list when you load.</p>
+            </Card>
+          )}
+
+          {!!parsed.stock?.length && (
+            <Card className="gap-3 p-4">
+              <h2 className="text-base font-semibold">Stock register <span className="ml-1 text-sm font-normal text-muted-foreground">{parsed.stock.filter((s) => s.status === "new").length} new · {parsed.stock.filter((s) => s.status === "changed").length} changed · {parsed.stock.filter((s) => s.status === "same").length} same</span></h2>
+              <div className="max-h-72 overflow-auto rounded-md border">
+                <table className="w-full text-sm"><thead className="sticky top-0 bg-muted text-left text-xs text-muted-foreground"><tr><th className="px-2 py-1.5">Contractor</th><th className="px-2">Stock date</th><th className="px-2">Last in database</th><th className="px-2">Result</th><th className="px-2 text-right">Total t</th><th className="px-2">What differs</th></tr></thead>
+                  <tbody>{parsed.stock.map((s) => (
+                    <tr key={`${s.contractor}|${s.date}`} className="border-t align-top"><td className="px-2 py-1">{s.contractor}</td><td className="px-2">{fmtDate(s.date)}</td>
+                      <td className="px-2">{s.last_db_date ? fmtDate(s.last_db_date) : "none"}{s.gap_days ? <span className="ml-1 text-xs text-muted-foreground">({s.gap_days} day{s.gap_days === 1 ? "" : "s"} with no row)</span> : null}</td>
+                      <td className="px-2"><span className={`rounded px-1 text-xs ${s.status === "new" ? "bg-[var(--info-bg)] text-[var(--info)]" : s.status === "changed" ? "bg-[var(--warning-bg)] text-[var(--warning)]" : "text-muted-foreground"}`}>{s.status === "new" ? "insert" : s.status === "changed" ? "update" : "same, skipped"}</span></td>
+                      <td className="px-2 text-right font-mono tabular-nums">{cell(s.old_total != null && s.old_total !== s.total ? `${s.old_total.toLocaleString("en-US")} → ${s.total.toLocaleString("en-US")}` : s.total.toLocaleString("en-US"))}</td>
+                      <td className="px-2 text-xs">{s.changes.slice(0, 6).map((c) => <div key={c.col} className="font-mono">{c.col}: {cell(c.old)} → <span className="font-semibold">{cell(c.new)}</span></div>)}{s.changes.length > 6 && <div className="text-muted-foreground">+ {s.changes.length - 6} more</div>}</td></tr>))}</tbody></table>
+              </div>
+              <p className="text-xs text-muted-foreground">Only days that are new or differ are loaded. A day that is identical to the database is left alone. A load replaces a whole day of stock, so the other contractors of that day are copied unchanged.</p>
             </Card>
           )}
 

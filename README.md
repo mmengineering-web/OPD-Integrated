@@ -5,7 +5,7 @@ One installable web app (PWA) for a mining company: **one login** for production
 - Live: https://technicalproductionportal.vercel.app
 - Repo: https://github.com/mmengineering-web/OPD-Integrated
 - Owner: Gera. Portfolio project (non-commercial), but built to be fully functional.
-- Version: **4.4.0** (Phase 4, step 4.4; Python reader `public/etl/manifest.json` 4.4-5). Last updated: 24 Nov 2026
+- Version: **4.4.0** (Phase 4, step 4.4; Python reader `public/etl/manifest.json` 4.4-6). Last updated: 24 Nov 2026
 
 > **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a database connection string, a password, a `.env`, or any site data (master workbooks, `*.ndjson` dumps, daily reports). `.gitignore` blocks the common ones. Site data and user names must stay out of this public repo.
 

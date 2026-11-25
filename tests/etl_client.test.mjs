@@ -23,6 +23,8 @@ assert.deepEqual(C.historyWindow("2026-01-05"), { from: "2025-11-21", before: "2
 assert.deepEqual(C.logCounts([{ severity: "WARN" }, { severity: "WARN" }, { severity: "ERROR" }]), { ERROR: 1, WARN: 2, RECON: 0, INFO: 0 });
 assert.equal(C.blockers({ actual: [], log: [] }).length, 1);
 assert.equal(C.blockers({ actual: [{}], log: [{ severity: "WARN", message: "x" }] }).length, 0);
+assert.match(C.blockers({ actual: [], log: [], stock: [{ status: "same" }] })[0], /identical to the database/);
+assert.equal(C.blockers({ actual: [{}], stock: [{ status: "changed" }], log: [] }).length, 0);
 assert.match(C.blockers({ actual: [{}], log: [{ severity: "ERROR", table: "tblRAWMNG", message: "section not read" }] })[0], /section not read/);
 
 // paging: 2,350 rows come back in 3 pages, and each table gets its own window
@@ -36,6 +38,12 @@ const h = await C.readHistory(client, "2026-11-19");
 assert.equal(h.tblRAWMNG.length, 2350); assert.equal(calls.filter((c) => c[1] === "tblRAWMNG").length, 3);
 const w = (t) => calls.find((c) => c[1] === t);
 assert.deepEqual(w("tblRAWMNG").slice(2, 4), ["2025-12-12", "2026-11-18"], "raw tables stop the day before the report");
+table.tblRAWSTOCK = 4; calls.length = 0;
+await C.readHistory(client, "2026-11-19");
+assert.deepEqual(w("tblRAWSTOCK").slice(2, 4), ["2025-12-12", "2026-11-18"], "stock stops the day before the report for WKM and BM");
+calls.length = 0;
+await C.readHistory(client, "2026-11-19", () => {}, { stockAll: true });
+assert.deepEqual(w("tblRAWSTOCK").slice(2, 4), ["2025-12-12", null], "TMS stock is read through the newest day (same-day compare)");
 assert.deepEqual(w("tblCALENDAR").slice(2, 4), ["2025-12-12", "2027-12-24"], "the calendar is read about 400 days ahead (the plan is written for the whole year)");
 assert.deepEqual(w("tblIDPIT").slice(2, 4), [null, null], "vocabulary lists are read whole");
 await assert.rejects(C.readHistory({ rpc: () => ({ then: (r) => r({ data: [], error: null }) }) }, "2026-11-19"), /no history/);

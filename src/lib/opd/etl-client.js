@@ -45,8 +45,9 @@ async function rpcRows(client, fn, args) {
 /**
  * Read the history the reader needs. Returns {table: rows[]}.
  * @param {(done: number, total: number, table: string) => void} [onProgress]
+ * @param {{stockAll?: boolean}} [opts] stockAll (TMS): read the stock table through to the newest day, not only up to the day before the report
  */
-export async function readHistory(client, reportDate, onProgress = () => {}) {
+export async function readHistory(client, reportDate, onProgress = () => {}, opts = {}) {
   const { data: sum, error } = await client.rpc("etl_history_summary");
   if (error) throw new Error(`etl_history_summary: ${error.message}`);
   const tables = (sum || []).map((s) => s.tbl);
@@ -56,7 +57,9 @@ export async function readHistory(client, reportDate, onProgress = () => {}) {
     t,
     // the barge list is a whole list (latest state), not a dated table: read all of it
     args: t === "tblRAWBARGE" ? { p_tbl: t, p_from: null, p_to: null }
-      : { p_tbl: t, p_from: t.startsWith("tblRAW") || t === "tblCALENDAR" ? w.from : null, p_to: t === "tblCALENDAR" ? w.calUntil : t.startsWith("tblRAW") ? w.before : null },
+      : t === "tblRAWSTOCK" && opts.stockAll    // TMS stock: also the report day and later, to tell new from same from changed
+        ? { p_tbl: t, p_from: w.from, p_to: null }
+        : { p_tbl: t, p_from: t.startsWith("tblRAW") || t === "tblCALENDAR" ? w.from : null, p_to: t === "tblCALENDAR" ? w.calUntil : t.startsWith("tblRAW") ? w.before : null },
   }));
   const hist = {}; let done = 0, i = 0;
   const worker = async () => {
@@ -105,7 +108,12 @@ export function logCounts(log) {
 /** Rows the database refuses to take: section errors mean the report was only half read, so loading is blocked until the person looks. */
 export function blockers(parsed) {
   const out = [];
-  if (!parsed?.actual?.length && !parsed?.barge?.length) out.push("No rows were read from the report.");   // a barging file alone has no day rows, only barge changes
+  if (!parsed?.actual?.length && !parsed?.barge?.length) {   // a barging file alone has no day rows, only barge changes
+    const st = parsed?.stock || [];
+    out.push(st.length && st.every((x) => x.status === "same")
+      ? "Nothing to load: the stock in this file is identical to the database."
+      : "No rows were read from the report.");
+  }
   for (const x of parsed?.log || []) if (x.severity === "ERROR") out.push(`${x.table || ""} ${x.message}`.trim());
   return out;
 }

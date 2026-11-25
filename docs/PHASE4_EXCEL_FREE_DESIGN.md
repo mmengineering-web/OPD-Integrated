@@ -144,3 +144,6 @@ modules but are refused for now until their load path (history update of old row
 
 ## Step 4.4b to 4.4f status (24 Nov 2026): TMS complete in test mode
 TMS now reads four file types: DPR, Realisasi Barging, stock dome register and hazard `.docx` (`etl_05_hazard.sql` needed on TMS). `fact_skip_metrics` drops TOT/ALL helper metrics that prod_v2 does not hold. Reader version 4.4-5. Details: `docs/OPD_UPLOAD_MODULE.md`. Open: hazard closures of earlier findings, TMS plan Replace, editable preview.
+
+## Step 4.4g status (25 Nov 2026): stock register like the barge list
+The TMS stock upload now compares the register with the database before loading. Per contractor and date: insert (new), update (differs, columns listed old -> new) or same (skipped). The last stock date in the database is shown per contractor; the page reads TMS stock history through the newest day (`readHistory(..., { stockAll: true })`) so a re-upload of the same day is recognised. Whole-day replacement is kept, so rows of other contractors of that day are copied unchanged. No rows are deleted for being absent from the file (a register is one day, not a list). Reader version 4.4-6. No SQL change.

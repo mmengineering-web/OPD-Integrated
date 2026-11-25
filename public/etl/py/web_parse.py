@@ -77,6 +77,104 @@ def peek(kind, pdf_path, cfg_json=None, name=""):
     return json.dumps({"report_date": d.isoformat()})
 
 
+# ---------------------------------------------------------------------------- stock register: same workflow as the barge list
+_STOCK_ID = ("DATE", "SITE", "CONTRACTOR", "SHIFT", "INPUT DATE")
+
+
+def _d10(v):
+    return None if v is None else str(v)[:10]
+
+
+def _stock_eq(col, a, b):
+    """History and file agree on one stock column. Tonnage columns are stored to 2 decimals, grades to 3."""
+    if a is None and b is None:
+        return True
+    if a is None or b is None:
+        return (b if a is None else a) in (0, 0.0)
+    try:
+        return abs(float(a) - float(b)) <= (0.006 if col.endswith("TONAGE") else 0.0006)
+    except (TypeError, ValueError):
+        return a == b
+
+
+def _stock_total(row):
+    return round(sum(v for k, v in row.items() if k.endswith("-TONAGE") and not k.endswith("-WS-TONAGE") and isinstance(v, (int, float))), 2)
+
+
+def _stock(history, res, d):
+    """The stock register against what the database holds, per contractor and date:
+         new      no row for that contractor and date  -> insert
+         changed  a row exists and differs              -> update (the columns that differ are listed)
+         same     identical                             -> nothing to do
+       The last stock date in the database is reported per contractor. A date whose rows are all identical is dropped from the upload.
+       A date with any new or changed row keeps ALL its rows (a load replaces a whole day of a table), including the rows of
+       contractors that are not in the file, copied unchanged from the database."""
+    T = "tblRAWSTOCK"
+    staged = res["rows"].get(T) or []
+    if not staged:
+        return None
+    hist = history.get(T) or []
+    by_h, last = {}, {}
+    for r in hist:
+        dd, c = _d10(r.get("DATE")), r.get("CONTRACTOR")
+        if dd is None:
+            continue
+        by_h[(dd, c)] = r
+        if c not in last or dd > last[c]:
+            last[c] = dd
+    items = []
+    for row in staged:
+        dd, c = _d10(row.get("DATE")), row.get("CONTRACTOR")
+        old = by_h.get((dd, c))
+        item = {"contractor": c, "date": dd, "last_db_date": last.get(c), "status": "new", "changes": [],
+                "total": _stock_total(row), "old_total": None, "gap_days": None}
+        if old is not None:
+            cols = [k for k in row if k not in _STOCK_ID]
+            ch = [{"col": k, "old": old.get(k), "new": row.get(k)} for k in cols if not _stock_eq(k, old.get(k), row.get(k))]
+            item["status"], item["changes"], item["old_total"] = ("changed" if ch else "same"), ch, _stock_total(old)
+        elif last.get(c) and last[c] < dd:
+            item["gap_days"] = (dt.date.fromisoformat(dd) - dt.date.fromisoformat(last[c])).days - 1
+        items.append(item)
+    changed_dates = {i["date"] for i in items if i["status"] != "same"}
+    kept, preserved = [], []
+    for row in staged:
+        if _d10(row.get("DATE")) in changed_dates:
+            kept.append(row)
+    in_file = {(i["date"], i["contractor"]) for i in items}
+    for dd in sorted(changed_dates):
+        for (hd, hc), hr in by_h.items():
+            if hd == dd and (hd, hc) not in in_file:
+                kept.append(dict(hr))
+                preserved.append(f"{hc} {dd}")
+    if kept:
+        res["rows"][T] = kept
+    else:
+        res["rows"].pop(T, None)
+    for i in items:
+        i["loaded"] = i["date"] in changed_dates
+    # the generic "already in the master" warning is replaced by the status above
+    res["log"] = [x for x in res["log"] if x.get("check") != "stock-already-in-master"]
+    for i in items:
+        sev, who = "INFO", f"{i['contractor']} {i['date']}"
+        if i["status"] == "new":
+            msg = (f"{who}: new in the database (last stock date there: {i['last_db_date'] or 'none'}"
+                   + (f"; {i['gap_days']} day(s) in between have no stock row, a register shows one day only" if i["gap_days"] else "") + ")")
+        elif i["status"] == "changed":
+            msg = f"{who}: already in the database, {len(i['changes'])} value(s) differ and will be updated"
+        else:
+            msg = f"{who}: identical to the database, nothing to update"
+        if i["last_db_date"] and i["date"] < i["last_db_date"]:
+            sev, msg = "WARN", msg + f". This is older than the last stock date in the database ({i['last_db_date']})"
+        res["log"].append({"severity": sev, "date": i["date"], "table": T, "check": "stock-status", "message": msg})
+    if preserved:
+        res["log"].append({"severity": "INFO", "date": d.isoformat(), "table": T, "check": "stock-kept",
+                           "message": "Rows of other contractors on the same day are copied unchanged (a load replaces the whole day): " + ", ".join(preserved)})
+    if not changed_dates:
+        res["log"].append({"severity": "INFO", "date": d.isoformat(), "table": T, "check": "stock-nothing",
+                           "message": "Everything in the stock register is already in the database: nothing to load."})
+    return items
+
+
 def _barge(cfg, schema, history, res, d, site, X):
     """The barge list after this report: merged by SI in the history list, calculated columns rebuilt. Returns the changed rows only,
     each {si, hist (history row), fact (fact_barge row), old (history row before or None)}."""
@@ -170,6 +268,7 @@ def parse(kind, pdf_path, cfg_json, schema_json, history_json, name=""):
         res = P.parse_report(kind, pdf_path, cfg, schema, history)
     d = dt.date.fromisoformat(res["report_date"])
     site = cfg["site"]
+    stock = _stock(history, res, d) if kind == "tms" else None
 
     # the long (EAV) rows the fact table holds: the same function the Excel master export uses
     base = P.HistoryMaster(schema, history)
@@ -189,6 +288,9 @@ def parse(kind, pdf_path, cfg_json, schema_json, history_json, name=""):
     for r in actual:      # a hazard finding whose HAZARD CATEGORY is not in the report (site fills it by hand later): the fact table needs a group, "-" is the master's own blank
         if r["category"] == "HAZARD" and not r.get("metric_group"):
             r["metric_group"] = "-"
+    only = {tn for tn, rows in res["rows"].items() if rows and tn != "tblRAWBARGE"}
+    if kind == "tms" and only <= {"tblRAWSTOCK", "tblRAWHAZARD"}:     # a stock-only or hazard-only file: do not re-stage the other categories of that day from the history
+        actual = [r for r in actual if r["category"] in {"STOCK" if t == "tblRAWSTOCK" else "HAZARD" for t in only}]
     skip = set(cfg.get("fact_skip_metrics") or [])      # TMS: helper columns the site's fact table never held
     if skip:
         actual = [r for r in actual if r["metric"] not in skip]
@@ -203,6 +305,6 @@ def parse(kind, pdf_path, cfg_json, schema_json, history_json, name=""):
     counts = Counter(r["category"] for r in actual)
     return json.dumps({
         "report_date": d.isoformat(), "site": site, "actual": actual, "raw": raw,
-        "barge": barge, "plan": plan, "ship_updates": _ship_list(res), "log": res["log"], "summary": {"rows": len(actual), "by_category": dict(counts), "raw_rows": {k: len(v) for k, v in raw.items()},
+        "barge": barge, "stock": stock, "plan": plan, "ship_updates": _ship_list(res), "log": res["log"], "summary": {"rows": len(actual), "by_category": dict(counts), "raw_rows": {k: len(v) for k, v in raw.items()},
                                        "build_notes": rep.get("notes", [])},
     }, default=_json_default)
