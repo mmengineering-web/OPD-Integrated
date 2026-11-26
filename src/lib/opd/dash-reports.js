@@ -27,10 +27,27 @@ export function linreg(xs, ys) {
   return { slope: sxy / sxx, intercept: my - (sxy / sxx) * mx, r: sxy / Math.sqrt(sxx * syy), n };
 }
 
+/** Opening + inflows - outflows +/- what is left = closing, read from a stock-like column. Returns null steps when fewer than two days have a stock. */
+function flowBridge(stockMap, flows, days, labels, okDay = () => true) {
+  const have = days.filter((d) => stockMap.has(d) && okDay(d));
+  if (have.length < 2) return { ok: false, why: "Needs a stock value on at least two days of the range." };
+  const first = have[0], last = have.at(-1), use = days.filter((d) => d > first && d <= last);
+  const open = stockMap.get(first), close = stockMap.get(last);
+  const steps = [{ key: "open", label: `${labels.open} ${first.slice(5)}`, type: "total", value: open }];
+  let net = 0;
+  flows.forEach((f) => { const v = at(f.map, use) * f.sign; net += v; steps.push({ key: f.key, label: f.label, type: "delta", value: v }); });
+  const rest = close - open - net;
+  steps.push({ key: "adj", label: labels.adj, type: "delta", value: rest, note: labels.adjNote });
+  steps.push({ key: "close", label: `${labels.close} ${last.slice(5)}`, type: "total", value: close });
+  let run = 0; steps.forEach((x) => { if (x.type === "total") { x.start = 0; x.end = x.value; run = x.value; } else { x.start = run; run += x.value; x.end = run; } });
+  return { ok: true, steps, open, close, first, last, rest, days: use.length, skipped: days.filter((d) => d >= first && d <= last && stockMap.has(d) && !okDay(d)).length };
+}
+
 export function buildReports(raw, { from, to }) {
   const sites = Object.keys(raw || {}).filter((k) => raw[k]);
   const days = dayList(from, to);
   const R = (t) => sites.flatMap((s) => rowsOf(raw[s], t));
+  const hse = R("tblRAWHSE"), mp = R("tblRAWMP"), lab = R("tblRAWLAB"), ex = R("tblRAWEXPLO"), geo = R("tblRAWGEOMAP");
   const mng = R("tblRAWMNG"), ship = R("tblRAWSHIP"), cal = R("tblCALENDAR"), haul = R("tblRAWHAUL"), we = R("tblRAWWEWH"), up = R("tblRAWUP"), eq = R("tblRAWEQ"), fuel = R("tblRAWFUEL"), stk = R("tblRAWSTOCK");
   const ore = sumCols(mng, LMH), ob = sumBy(mng, "OB-DAY"), planOb = sumBy(cal, "OB-DAY"), planOre = sumCols(cal, LMH);
   const shipM = sumBy(ship, "DAY"), planShip = sumBy(cal, "ST-DAY"), haulM = sumBy(haul, "DAY"), fuelM = sumBy(fuel, "DAY"), ewh = sumBy(we, "EWH");
@@ -44,9 +61,24 @@ export function buildReports(raw, { from, to }) {
   const dtUnits = Object.fromEntries(["OP", "S", "B"].map((st) => [st, sumCols(eq, ["DT", "ADT"].map((t) => `${st}-${t}`))]));
   const stockKeys = new Set(); stk.forEach((r) => Object.keys(r.v || {}).forEach((k) => /^E[TF]O-[A-Z]+-TONAGE$/.test(k) && stockKeys.add(k)));
   const stock = sumCols(stk, [...stockKeys]);
+  const HSE_K = ["NM", "MTI", "LTI", "FAI", "PD", "FC", "EC", "FATALITY"], LAB_T = ["FP", "QC", "SS", "SC", "FO", "DOME", "BARGE", "EXPLO"], ROLE_K = ["MANAGER", "SPT", "SPV", "DRIVER", "OPERATOR", "ETC"];
+  const hseM = Object.fromEntries(HSE_K.map((k) => [k, sumBy(hse, k)])), inc = sumCols(hse, HSE_K), incSerious = sumCols(hse, ["MTI", "LTI", "FATALITY"]);
+  const fuelStock = sumBy(fuel, "STOCK"), fuelAdd = sumBy(fuel, "STOCK ADD"), fuelFR = avgBy(fuel, "FR");
+  const mpTotal = sumBy(mp, "TOTAL"), mpAdd = sumBy(mp, "ADD"), mpRes = sumBy(mp, "RESIGN"), roles = Object.fromEntries(ROLE_K.map((k) => [k, sumBy(mp, k)]));
+  const labM = Object.fromEntries(["ID", "FD", "AD"].map((f) => [f, Object.fromEntries(LAB_T.map((t) => [t, sumBy(lab, `${f}-${t}`)]))]));
+  const labTotal = sumCols(lab, ["ID", "FD", "AD"].flatMap((f) => LAB_T.map((t) => `${f}-${t}`)));
+  const xm = Object.fromEntries(["SO-PLAN", "SO-ACTUAL", "PUH-PLAN", "PUH-ACTUAL", "P-DH", "A-DH", "P-SAMPLE", "A-SAMPLE", "P-DEPTH", "A-DEPTH"].map((k) => [k, sumBy(ex, k)]));
+  const geoM = sumBy(geo, "TOTAL COVERED AREA");
+  const GRADES = [["H", "HGO"], ["M", "MGO"], ["L", "LGO"], ["LB", "LGO-B"]];
+  const oreStock = sumCols(stk, GRADES.flatMap(([g]) => [`ETO-${g}-TONAGE`, `EFO-${g}-TONAGE`]));
+  const gradeStock = Object.fromEntries(GRADES.map(([g]) => [g, sumCols(stk, [`ETO-${g}-TONAGE`, `EFO-${g}-TONAGE`])]));
+  const gradeNi = Object.fromEntries(GRADES.map(([g]) => [g, meanOfMaps([avgBy(stk, `ETO-${g}-Ni`), avgBy(stk, `EFO-${g}-Ni`)])]));
+  const pitStock = sumCols(stk, GRADES.map(([g]) => `ETO-${g}-TONAGE`)), portStock = sumCols(stk, GRADES.map(([g]) => `EFO-${g}-TONAGE`));
   const loaded = days.filter((d) => ob.has(d) || ore.has(d) || shipM.has(d));
   const prodDays = days.filter((d) => ob.has(d) || ore.has(d));
   const A = (m) => arr(m, days);
+  // a day counts for a bridge only when every chosen site has loaded that table, otherwise a late site looks like a stock drop
+  const full = (t) => { const sets = sites.map((x) => new Set(rowsOf(raw[x], t).map((r) => String(r.d).slice(0, 10)))); return (d) => sets.every((z) => z.has(d)); };
 
   // ---- waterfall ----
   const wf = (() => {
@@ -89,7 +121,8 @@ export function buildReports(raw, { from, to }) {
       row("Overburden moved", "BCM/day", ob, true), row("Ore produced", "t/day", ore, true), row("Shipment", "t/day", shipM, true), row("Hauled volume", "BCM/day", haulM, true),
       row("Effective working hours", "h/day", ewh, true), row("Units operating", "units", units.OP, true), row("Units on standby", "units", units.S, false), row("Units in breakdown", "units", units.B, false),
       row("Trucks operating", "units", dtUnits.OP, true), row("Trucks in breakdown", "units", dtUnits.B, false), row("Physical availability", "%", pa, true, pctScale), row("Utilization of availability", "%", ua, true, pctScale),
-      row("Fuel per BCM", "L/BCM", perBcm(fuelM, ob), false),
+      row("Fuel per BCM", "L/BCM", perBcm(fuelM, ob), false), row("Fuel used", "L/day", fuelM, false), row("Incidents and near misses", "per day", inc, false),
+      row("Drill holes drilled", "holes/day", xm["A-DH"], true), row("Samples drilled", "samples/day", xm["A-SAMPLE"], true), row("Lab samples", "samples/day", labTotal, true),
     ].filter((r) => r.dry != null && r.rain != null);
     return { ok: true, nRain: rainD.length, nDry: dryD.length, rows };
   })();
@@ -146,5 +179,21 @@ export function buildReports(raw, { from, to }) {
       shipOverProd: days.map((d) => (shipM.has(d) && ore.get(d) > 0 ? shipM.get(d) / ore.get(d) : null)),
     },
     cause: Object.fromEntries(DELAY_COLS.map((c) => [c, A(cause[c])])),
+    bridges: {
+      stock: flowBridge(oreStock, [{ key: "prod", label: "Ore produced", map: ore, sign: 1 }, { key: "ship", label: "Shipped", map: shipM, sign: -1 }], days, { open: "Stock", close: "Stock", adj: "Moves and adjustments", adjNote: "Stock that the mined and shipped tonnes do not explain: rehandling, drying losses, survey corrections" }, full("tblRAWSTOCK")),
+      fuel: flowBridge(fuelStock, [{ key: "add", label: "Fuel received", map: fuelAdd, sign: 1 }, { key: "use", label: "Fuel used", map: fuelM, sign: -1 }], days, { open: "Stock", close: "Stock", adj: "Unexplained", adjNote: "Stock change that deliveries and use do not explain: transfers, measurement, loss" }, full("tblRAWFUEL")),
+      people: flowBridge(mpTotal, [{ key: "add", label: "Joined", map: mpAdd, sign: 1 }, { key: "res", label: "Left", map: mpRes, sign: -1 }], days, { open: "Headcount", close: "Headcount", adj: "Transfers and other", adjNote: "Headcount change that joiners and leavers do not explain" }, full("tblRAWMP")),
+    },
+    x: {
+      stock: A(oreStock), pit: A(pitStock), port: A(portStock), grade: Object.fromEntries(GRADES.map(([g]) => [g, A(gradeStock[g])])), ni: Object.fromEntries(GRADES.map(([g]) => [g, A(gradeNi[g])])),
+      hse: Object.fromEntries(HSE_K.map((k) => [k, A(hseM[k])])), inc: A(inc), incSerious: A(incSerious),
+      fuelStock: A(fuelStock), fuelAdd: A(fuelAdd), fuelFR: A(fuelFR), fuelPerEwh: days.map((d) => (fuelM.has(d) && ewh.get(d) > 0 ? fuelM.get(d) / ewh.get(d) : null)),
+      mp: A(mpTotal), mpAdd: A(mpAdd), mpRes: A(mpRes), roles: Object.fromEntries(ROLE_K.map((k) => [k, A(roles[k])])),
+      bcmPerHead: days.map((d) => (ob.has(d) && mpTotal.get(d) > 0 ? ob.get(d) / mpTotal.get(d) : null)),
+      crewPerUnit: days.map((d) => (units.OP.get(d) > 0 && mpTotal.get(d) > 0 ? ((roles.DRIVER.get(d) || 0) + (roles.OPERATOR.get(d) || 0)) / units.OP.get(d) : null)),
+      lab: Object.fromEntries(["ID", "FD", "AD"].map((f) => [f, Object.fromEntries(LAB_T.map((t) => [t, A(labM[f][t])]))])), labTotal: A(labTotal),
+      explo: Object.fromEntries(Object.keys(xm).map((k) => [k, A(xm[k])])), geo: A(geoM),
+    },
+    labTypes: LAB_T, roleKeys: ROLE_K, grades: GRADES, hseKeys: HSE_K,
   };
 }

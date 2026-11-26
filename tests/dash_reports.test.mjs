@@ -45,3 +45,26 @@ test("report series line up with the day list", () => {
   const m = buildReports(raw, range);
   ["ob", "ewh", "wet", "OP", "B", "pa", "haul"].forEach((k) => assert.equal(m.s[k].length, m.days.length));
 });
+
+test("stock, fuel and headcount bridges close on the closing value", () => {
+  const m = buildReports(raw, range);
+  for (const k of ["stock", "fuel", "people"]) {
+    const b = m.bridges[k]; assert.equal(b.ok, true, k);
+    const s = b.steps, sum = s[0].value + s.slice(1, -1).reduce((a, x) => a + x.value, 0);
+    assert.ok(Math.abs(sum - s.at(-1).value) < 1e-6, k);
+  }
+});
+test("a late site does not look like a stock drop: bridge ends on the last day every site has loaded", () => {
+  const m = buildReports(raw, range), b = m.bridges.stock;
+  assert.ok(b.last < "2026-11-24", "TMS is 9 days late in the demo, so the bridge stops before the newest day");
+});
+test("a bridge needs two stock days", () => {
+  const one = { WKM: { ...raw.WKM, daily: { ...raw.WKM.daily, tblRAWFUEL: raw.WKM.daily.tblRAWFUEL.slice(0, 1) } } };
+  assert.equal(buildReports(one, range).bridges.fuel.ok, false);
+});
+test("the extra series are aligned and rain rows cover drilling, fuel and incidents", () => {
+  const m = buildReports(raw, range);
+  ["stock", "inc", "fuelStock", "mp", "labTotal", "geo"].forEach((k) => assert.equal(m.x[k].length, m.days.length, k));
+  const labels = m.rainEffect.rows.map((r) => r.label);
+  ["Fuel used", "Incidents and near misses", "Drill holes drilled"].forEach((l) => assert.ok(labels.includes(l), l));
+});

@@ -157,7 +157,7 @@ export function Parts({ items, aria }: { items: { name: string; value: number }[
 export type WfStep = { key: string; label: string; type: "total" | "delta"; value: number; start: number; end: number; note?: string; hours?: number; planHours?: number };
 
 /** Waterfall: totals in blue, gains green, losses red. Every bar carries its value; a table below gives the same numbers to screen readers. */
-export function Waterfall({ steps, unit = "BCM", aria, height = 300 }: { steps: WfStep[]; unit?: string; aria: string; height?: number }) {
+export function Waterfall({ steps, unit = "BCM", aria, height = 300, labels = ["Plan and actual", "Gain: less lost time than plan", "Loss"] }: { steps: WfStep[]; unit?: string; aria: string; height?: number; labels?: [string, string, string] }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [sel, setSel] = useState<number | null>(null);
   const n = steps.length, minW = n * 46, W = Math.max(w, minW), padL = 52, padR = 8, padT = 22, padB = 96, ih = height - padT - padB, iw = W - padL - padR;
@@ -171,7 +171,7 @@ export function Waterfall({ steps, unit = "BCM", aria, height = 300 }: { steps: 
   return (
     <div ref={ref} className="w-full">
       <ul className="mb-1 flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-hidden>
-        {[["Plan and actual", "var(--chart-1)"], ["Gain: less lost time than plan", "var(--success)"], ["Loss", "var(--danger)"]].map(([l, c]) => <li key={l} className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm" style={{ background: c }} />{l}</li>)}
+        {[[labels[0], "var(--chart-1)"], [labels[1], "var(--success)"], [labels[2], "var(--danger)"]].map(([l, c]) => <li key={l} className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm" style={{ background: c }} />{l}</li>)}
       </ul>
       <div className="overflow-x-auto">
         <svg width={W} height={height} role="img" aria-label={aria} className="block max-w-none">

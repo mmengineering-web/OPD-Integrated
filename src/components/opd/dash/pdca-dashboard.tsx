@@ -151,7 +151,7 @@ export function PdcaDashboard({ access, load, now }: { access: Access | null; lo
           {m.last && tab === "check" && <CheckTab m={m} />}
           {m.last && tab === "act" && <ActTab m={m} />}
           {tab === "data" && <DataTab raw={raw} m={m} />}
-          {REPORTS.some(([id]) => id === tab) && <ReportsView raw={raw} range={range} id={tab as ReportId} onGo={setTab} />}
+          {REPORTS.some(([id]) => id === tab) && <ReportsView raw={raw} range={range} id={tab as ReportId} onGo={setTab} dash={m} />}
         </div>
       </div>
     </div>

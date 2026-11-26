@@ -431,3 +431,88 @@ html, body { overflow-x: clip; max-width: 100%; }
 
 /* Headings and big numbers: one family (Geist), tight tracking, aligned digits. */
 .font-serif{letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+/* ==========================================================================
+   v3.0 "Soft" (neumorphism). Surface and canvas share one colour; depth comes only from a light and a dark shadow.
+   Raised = a card, a button, a tab. Inset = a field, a well, a pressed button, the active toggle.
+   Rules that keep it usable (neumorphism fails on contrast when done carelessly):
+   - text and status colours are unchanged and keep their contrast on the soft surface (muted text darkened to 6:1);
+   - every field has an inset edge line, never shadow alone; focus is a solid 2px ring, never a shadow change;
+   - the one action colour (laterite orange) stays flat and saturated, so the main button is still the loudest thing;
+   - status is still icon + label, never colour alone.
+   ========================================================================== */
+:root{
+  --page:#e7e2dc; --background:#e7e2dc; --card:#e7e2dc; --popover:#ebe7e1;
+  --secondary:#e0dbd4; --muted:#ded9d2; --accent:#ece3da;
+  --muted-foreground:#575049;
+  --border:rgba(60,40,20,.10); --input:rgba(60,40,20,.34);
+  --neu-hi:rgba(255,255,255,.88); --neu-lo:rgba(112,92,70,.30);
+  --neu-out:  -7px -7px 16px var(--neu-hi), 7px 7px 16px var(--neu-lo);
+  --neu-out-sm:-4px -4px 9px var(--neu-hi), 4px 4px 9px var(--neu-lo);
+  --neu-out-xs:-2px -2px 5px var(--neu-hi), 2px 2px 5px var(--neu-lo);
+  --neu-in:   inset -5px -5px 11px var(--neu-hi), inset 5px 5px 11px var(--neu-lo);
+  --neu-in-sm:inset -3px -3px 7px var(--neu-hi), inset 3px 3px 7px var(--neu-lo);
+  --neu-edge:rgba(60,40,20,.16);
+  --shadow-xs:var(--neu-out-xs); --shadow-sm:var(--neu-out-sm); --shadow-md:var(--neu-out); --shadow-lg:-10px -10px 24px var(--neu-hi), 12px 12px 28px var(--neu-lo);
+  --surface-hi:transparent;
+  --radius:.875rem;
+  --chart-grid:rgba(60,40,20,.14); --chart-text:#4a443e;
+}
+[data-theme="dark"]{
+  --page:#1e1b18; --background:#1e1b18; --card:#1e1b18; --popover:#252119;
+  --secondary:#262220; --muted:#24201d; --accent:#2b2520;
+  --muted-foreground:#b3aaa0;
+  --neu-hi:rgba(255,240,225,.055); --neu-lo:rgba(0,0,0,.62);
+  --neu-edge:rgba(255,240,225,.2);
+  --chart-grid:rgba(255,240,225,.13);
+}
+html,body{background:var(--page)}
+
+/* raised surfaces: shadcn Card, the sidebar, any bordered card-colour box, sticky bars */
+[data-slot="card"],.mapx .card,.mpdf .card,.login,.mlp,.land-mod,.land-site{border:0;box-shadow:var(--neu-out);border-radius:1.25rem}
+.border.bg-card:not(input):not(select):not(textarea):not(button):not(a){border-color:transparent;box-shadow:var(--neu-out-sm)}
+[data-slot="card"] .border.bg-card:not(input):not(select):not(textarea):not(button):not(a){box-shadow:var(--neu-out-xs)}
+.shell-side{border-color:transparent!important;box-shadow:var(--neu-out)!important}
+
+/* wells: tab strips, segmented controls, tinted info panels, bars and tracks */
+.bg-muted\/50:not(button):not(a),.bg-muted\/40:not(button):not(a),.rounded-xl.border.bg-card.p-1,.rounded-lg.border.bg-muted\/50{box-shadow:var(--neu-in-sm);border-color:transparent}
+.relative.h-3.w-full.rounded-full.bg-muted,.h-3.rounded-sm.bg-muted{box-shadow:var(--neu-in-sm)}
+
+/* fields: inset, with a thin edge line so the control is still found without relying on shadow */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea,.border-input.bg-card{
+  background:var(--card);border:1px solid var(--neu-edge);box-shadow:var(--neu-in-sm)}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ring);outline-offset:2px;box-shadow:var(--neu-in-sm)}
+input[readonly]{box-shadow:none;border-style:dashed}
+.mapx input:not([type=checkbox]):not([type=color]):not([type=range]),.mapx select,.mpdf input,.mpdf select,.mpdf textarea{background:var(--card);border:1px solid var(--neu-edge);box-shadow:var(--neu-in-sm)}
+
+/* buttons that are not the shadcn Button (map panel, layer manager) */
+.mapx .btn,.mpdf .btn,.mlp-toggle,.mlp-top button{background:var(--card);border:0;box-shadow:var(--neu-out-xs);border-radius:var(--radius-lg)}
+.mapx .btn:hover,.mpdf .btn:hover{background:var(--card);box-shadow:var(--neu-out-sm)}
+.mapx .btn:active,.mpdf .btn:active,.mlp-toggle:active,.mlp-top button:active{box-shadow:var(--neu-in-sm)}
+.mapx .btn.primary,.mpdf .btn.primary{background:var(--primary);box-shadow:var(--neu-out-xs)}
+
+/* pills and chips stay flat with a faint edge, so they are not mistaken for buttons */
+.rounded-full.border.bg-card{box-shadow:none;border:1px solid var(--neu-edge)}
+
+/* press feedback: .lift cards sink instead of scaling */
+.lift:active{transform:none;box-shadow:var(--neu-in-sm)}
+@media (hover:hover){.lift:hover{transform:translateY(-1px);box-shadow:var(--neu-out)}}
+a.land-mod:hover{box-shadow:var(--shadow-lg)}
+.land-card{box-shadow:var(--neu-out)}
+.land-card[data-on]{background:var(--card);box-shadow:var(--shadow-lg)}
+.land-sec-alt{background:var(--page);border-block:0}
+.land-sec-alt .land-mod,.land-site{background:var(--card)}
+.land-ico{box-shadow:var(--neu-out-xs);background:var(--card)}
+.land-ico-on{box-shadow:var(--neu-out-xs)}
+.land-state{border:1px solid var(--neu-edge)}
+.land-chip{box-shadow:var(--neu-out-sm)}
+.login{background:var(--card)}
+
+/* tables stay flat inside a raised frame: no extra shadows on rows */
+table{border-collapse:collapse}
+thead th,.sticky.top-0.bg-muted{background:var(--muted)}
+[role="tab"][aria-selected="true"]{box-shadow:var(--neu-out-xs)}
+[role="tab"]:not([aria-selected="true"]):active{box-shadow:var(--neu-in-sm)}
+button.rounded-full.border.bg-card,button.rounded-full.border.bg-card:not([aria-pressed="true"]){border-color:transparent;box-shadow:var(--neu-out-xs)}
+button.rounded-full.border.bg-card:active{box-shadow:var(--neu-in-sm)}
+button.rounded-full.border.bg-primary{border-color:transparent;box-shadow:var(--neu-in-sm)}

@@ -30,7 +30,7 @@ Location: Production > Dashboard > **Interactive** tab (default). The Looker Stu
 `etl_08_dashboard.sql`, `etl-client.js` (dashData, dashAll), `dash-model.js`, `dash-demo.js` (tests only), `dash/charts.tsx`, `dash/pdca-dashboard.tsx`, `dashboard-view.tsx`, tests `dash_model.test.mjs`, `etl_dash_test.sql`.
 
 ## Reports by table (4.9)
-A second row of tabs, **By table**: Mining, Shipment, Working hours, Equipment, Availability, Hauling. The other seven RAW tables (Ore stock, Safety, Fuel, Manpower, Lab, Exploration, Geological map) stay in the Do, Check and All tables tabs for now.
+A second row of tabs, **By table**, one report per RAW table (13): Mining, Shipment, Working hours, Equipment, Availability, Hauling, Ore stock, Safety, Fuel, Manpower, Lab, Exploration, Geological map.
 Each report has a one-sentence headline, KPI cards, linked charts on the same days (volume, hours, units), a "why was this day low" panel (click any bar), a rain-day against dry-day table, and links to the related reports.
 
 ### Waterfall (Production plan to Actual)
@@ -45,4 +45,16 @@ Each report has a one-sentence headline, KPI cards, linked charts on the same da
 ### Rain effect
 Rainy day = rain + slippery hours of 1 h or more. The table compares the daily averages with dry days for volume, hours, units operating, standby and breakdown, availability and fuel per BCM. The slope line is a simple correlation across days. It shows a pattern, not proof.
 
-Files: `dash-reports.js` (model), `dash/reports.tsx`, `dash/charts.tsx` (Waterfall), `dash/pdca-dashboard.tsx` (tabs), test `tests/dash_reports.test.mjs`. No new SQL: `etl_08_dashboard.sql` already returns the columns.
+### Bridges (stock, fuel, headcount)
+Opening + inflows - outflows +/- unexplained = closing. Ore stock: mined and shipped. Fuel: deliveries and use. Headcount: joined and left. The unexplained bar is what the daily rows do not account for, so a large one means a data problem to check. Only days where every selected site has loaded that table are counted, so a late site does not look like a drop.
+
+### Links between reports
+- Ore stock: stock by grade, mined vs shipped, rain hours, Ni by grade.
+- Safety: events by type against hours and weather, hazards by risk and category, open hazard list.
+- Fuel: used, litres per BCM, hauled, rain hours, stock and deliveries.
+- Manpower: headcount, joined/left, by role, units operating.
+- Lab: samples per family and type, barge samples vs shipment, exploration samples vs drilled.
+- Exploration: plan vs actual holes, depth and samples, cumulative depth, rain.
+- Geological map: covered area, added per day, drill holes.
+
+Files: `dash-reports.js` (model), `dash/reports.tsx`, `dash/reports-more.tsx`, `dash/report-ui.tsx`, `dash/charts.tsx` (Waterfall), `dash/pdca-dashboard.tsx` (tabs), test `tests/dash_reports.test.mjs`. No new SQL: `etl_08_dashboard.sql` already returns the columns.

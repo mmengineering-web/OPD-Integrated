@@ -4,16 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[transform,background,box-shadow,color] duration-200 outline-none select-none disabled:pointer-events-none disabled:opacity-50 active:scale-[.985] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-[transform,background,box-shadow,color] duration-200 outline-none select-none disabled:pointer-events-none disabled:opacity-50 active:scale-[.985] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-[color-mix(in_srgb,var(--primary)_86%,#fff)] to-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_1px_2px_rgba(60,40,20,.2)] hover:-translate-y-px hover:shadow-md",
-        outline: "border border-input bg-card text-foreground shadow-xs hover:bg-accent",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-accent",
-        ghost: "text-foreground hover:bg-accent",
-        destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
+          "bg-primary text-primary-foreground [box-shadow:var(--neu-out-sm)] hover:[box-shadow:var(--neu-out)] active:[box-shadow:var(--neu-in-sm)] active:brightness-95",
+        outline: "bg-card text-foreground [box-shadow:var(--neu-out-sm)] hover:[box-shadow:var(--neu-out)] active:[box-shadow:var(--neu-in-sm)]",
+        secondary: "bg-card text-secondary-foreground [box-shadow:var(--neu-out-xs)] hover:[box-shadow:var(--neu-out-sm)] active:[box-shadow:var(--neu-in-sm)]",
+        ghost: "text-foreground hover:[box-shadow:var(--neu-out-xs)] active:[box-shadow:var(--neu-in-sm)]",
+        destructive: "bg-destructive text-destructive-foreground [box-shadow:var(--neu-out-sm)] active:[box-shadow:var(--neu-in-sm)]",
       },
       size: {
         default: "h-[var(--control-h)] px-4",
