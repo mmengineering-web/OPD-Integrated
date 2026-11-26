@@ -13,7 +13,7 @@ const CLASSES = {
   coh:      { label: 'COH',      color: '#B45309', fill: '#F59E0B' },
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (n, d = 1) => (n == null || isNaN(n)) ? '—' : (Math.round(n * 10 ** d) / 10 ** d).toString();
+const fmt = (n, d = 1) => (n == null || isNaN(n)) ? '-' : (Math.round(n * 10 ** d) / 10 ** d).toString();
 const DASHES = [['', 'Solid'], ['8 5', 'Putus-putus'], ['2 5', 'Titik']];
 const PALETTE = ['#FACC15', '#2563EB', '#DC2626', '#16A34A', '#9333EA', '#EA580C', '#0891B2', '#DB2777'];
 
@@ -61,8 +61,8 @@ export async function showMap(el, noteEl, { info, canAdmin }) {
 
   map = L.map(el, { zoomControl: true, attributionControl: true, preferCanvas: false }).setView([-2.5, 118], 5);
   const bases = {
-    sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics' }),
-    topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, OpenStreetMap contributors' }),
+    sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri. Source: Esri, Maxar, Earthstar Geographics' }),
+    topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri. Esri, HERE, Garmin, USGS, OpenStreetMap contributors' }),
     otm: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, subdomains: 'abc', attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' }),
   };
   const setBase = k => { for (const [n, t] of Object.entries(bases)) (n === k ? t.addTo(map) : map.removeLayer(t)); prefs.base = k; savePrefs(); el.style.background = k === 'none' ? '#fff' : ''; };
@@ -98,12 +98,12 @@ export async function showMap(el, noteEl, { info, canAdmin }) {
     return `<div class="mp"><b>${esc(c.hole_id)}</b> <span class="mp-tag" style="background:${st.fill};border-color:${st.color}">${st.label}</span>
       <table>
       <tr><td>Tipe</td><td>${esc(labelOf('hole_type', c.hole_type))}</td></tr>
-      <tr><td>Prospect</td><td>${esc(c.prospect || '—')}</td></tr>
+      <tr><td>Prospect</td><td>${esc(c.prospect || '-')}</td></tr>
       <tr><td>Status</td><td>${esc(labelOf('collar_status', c.status))}</td></tr>
       <tr><td>Rencana</td><td>${fmt(c.planned_depth_m, 2)} m</td></tr>
       <tr><td>Capaian</td><td>${fmt(ach, 2)} m${pct != null ? ` (${fmt(pct)}%)` : ''}</td></tr>
       <tr><td>Total depth</td><td>${fmt(c.total_depth_m, 2)} m</td></tr>
-      <tr><td>Core</td><td>${withCore.length ? `${fmt(coreLen, 2)} m · recovery ${fmt(coreLen / coreM * 100)}%` : '—'}</td></tr>
+      <tr><td>Core</td><td>${withCore.length ? `${fmt(coreLen, 2)} m · recovery ${fmt(coreLen / coreM * 100)}%` : '-'}</td></tr>
       <tr><td>Koordinat</td><td>${asb ? 'as-built' : 'planned'} ${Number(lat).toFixed(6)}, ${Number(lon).toFixed(6)}</td></tr>
       </table>
       ${runs.length ? `<div class="mp-h">Progress terakhir</div>` + runs.slice(0, 5).map(r => `<div class="mp-r">${esc(r.work_date)} · ${r.from_m}–${r.to_m} m · ${esc(r.rig_id)}${r.core_len_m != null ? ` · core ${r.core_len_m} m` : ''}</div>`).join('') + (runs.length > 5 ? `<div class="mp-r muted">+${runs.length - 5} lainnya (lihat Riwayat)</div>` : '') : '<div class="mp-r muted">Belum ada progress.</div>'}

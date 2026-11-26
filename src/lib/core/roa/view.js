@@ -46,7 +46,7 @@ export async function viewRoa(root, { toast, canSave }) {
     }).join('');
     msg('#roa-out').innerHTML = `
     <div class="card"><h3>${esc(h.batch_id || '?')} <span class="muted small">laporan ${esc(h.report_no || '-')} · terima ${esc(h.received_date || '-')} · uji ${esc(h.tested_date || '-')} · terbit ${esc(h.reported_date || '-')}</span></h3>
-      <p class="small">${c.PRIMARY || 0} sampel utama · ${c.DUPLICATE || 0} duplikat · ${c.CRM || 0} CRM · ${c.BLANK || 0} blank — <b>${save.length}</b> akan disimpan, ${c.skip} dilewati, ${c.warn} perlu dicek.</p>
+      <p class="small">${c.PRIMARY || 0} sampel utama · ${c.DUPLICATE || 0} duplikat · ${c.CRM || 0} CRM · ${c.BLANK || 0} blank, <b>${save.length}</b> akan disimpan, ${c.skip} dilewati, ${c.warn} perlu dicek.</p>
       ${p.msgs.map(m => `<div class="msg ${m.sev === 'critical' ? 'err' : 'warn'}">${esc(m.text)}</div>`).join('')}
       <label class="small"><input type="checkbox" id="roa-warn" ${ui.withWarn ? 'checked' : ''}> Simpan juga baris bertanda ⚠ (interval diturunkan dari ID, hole belum ada collar, dll.)</label>
       <div class="row actions"><button class="btn primary" id="roa-go" ${canSave && save.length && !p.msgs.some(m => m.sev === 'critical') ? '' : 'disabled'}>Simpan ${save.length} baris</button></div>

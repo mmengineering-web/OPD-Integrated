@@ -41,7 +41,7 @@ export function validateProgress(r, { collar, siblings }) {
   if (r.core_len_m != null) {
     if (r.core_len_m < 0) errors.push('Core length tidak boleh negatif.');
     else if (f != null && t != null && t > f && r.core_len_m > (t - f) + 0.005)
-      warns.push(`Core length (${r.core_len_m} m) lebih besar dari meter yang dibor (${(t - f).toFixed(2)} m) — recovery > 100%. Cek ulang.`);
+      warns.push(`Core length (${r.core_len_m} m) lebih besar dari meter yang dibor (${(t - f).toFixed(2)} m, recovery > 100%. Cek ulang.`);
   }
   const dh = r.downtime_hours ?? 0;
   if (dh < 0 || dh > shiftHours) errors.push(`Downtime harus 0–${shiftHours} jam.`);
@@ -67,14 +67,14 @@ export function validateCollar(r, { others }) {
   if (r.total_depth_m != null && !(r.total_depth_m > 0)) errors.push('Total depth harus > 0.');
   const k = setting('depth_overrun_warn_factor');
   if (r.total_depth_m != null && r.planned_depth_m != null && r.total_depth_m > r.planned_depth_m * k)
-    warns.push(`Total depth > ${Math.round(k * 100)}% planned depth — cek ulang.`);
+    warns.push(`Total depth > ${Math.round(k * 100)}% planned depth. Cek ulang.`);
 
   const chk = (lat, lon, label, req) => {
     if (lat == null && lon == null) { if (req) errors.push(`${label}: koordinat wajib.`); return; }
     if (lat == null || lon == null) { errors.push(`${label}: lat dan lon harus diisi keduanya.`); return; }
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) errors.push(`${label}: koordinat di luar rentang.`);
     else if (lat < -11.5 || lat > 6.5 || lon < 94 || lon > 142)
-      warns.push(`${label}: koordinat di luar wilayah Indonesia — cek tanda +/- dan urutan lat/lon.`);
+      warns.push(`${label}: koordinat di luar wilayah Indonesia. Cek tanda +/- dan urutan lat/lon.`);
   };
   chk(r.planned_lat, r.planned_lon, 'Planned', false);
   const asb = r.asbuilt_lat != null || r.asbuilt_lon != null;

@@ -126,7 +126,7 @@ export function HoursForm({ info, tick }: { info: Info; tick?: string }) {
             <Field label="Waktu (tanggal)"><Input name="work_date" type="date" required value={f.work_date} onChange={e => setDateRig("work_date", e.target.value)} /></Field>
             <Field label="Rig">
               {d.rigs.length || f.rig_id
-                ? <Select name="rig_id" required value={f.rig_id} onChange={e => setDateRig("rig_id", e.target.value)}><option value="">— pilih —</option>{rigOpts.map((r: any) => <option key={r.rig_id} value={r.rig_id}>{r.rig_name || r.rig_id}</option>)}</Select>
+                ? <Select name="rig_id" required value={f.rig_id} onChange={e => setDateRig("rig_id", e.target.value)}><option value="">Pilih</option>{rigOpts.map((r: any) => <option key={r.rig_id} value={r.rig_id}>{r.rig_name || r.rig_id}</option>)}</Select>
                 : <Input name="rig_id" required autoCapitalize="characters" placeholder="mis. RIG-01" value={f.rig_id} onChange={e => setDateRig("rig_id", e.target.value)} />}
             </Field>
           </div>

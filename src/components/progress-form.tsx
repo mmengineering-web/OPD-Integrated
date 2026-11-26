@@ -204,7 +204,7 @@ export function ProgressForm({ info, tick }: { info: Info; tick?: string }) {
           </div>
           <Field label="Rig">
             {data.rigs.length ? (
-              <Select name="rig_id" required value={f.rig_id} onChange={e => set("rig_id", e.target.value)}><option value="">— pilih —</option>{data.rigs.map((r: any) => <option key={r.rig_id} value={r.rig_id}>{r.rig_name || r.rig_id}</option>)}</Select>
+              <Select name="rig_id" required value={f.rig_id} onChange={e => set("rig_id", e.target.value)}><option value="">Pilih</option>{data.rigs.map((r: any) => <option key={r.rig_id} value={r.rig_id}>{r.rig_name || r.rig_id}</option>)}</Select>
             ) : (
               <><Input name="rig_id" required autoCapitalize="characters" placeholder="mis. RIG-01" value={f.rig_id} onChange={e => set("rig_id", e.target.value)} />
                 <span className="text-xs font-normal text-muted-foreground">Daftar rig belum tersedia di HP ini (belum pernah login). Ketik ID rig.</span></>
@@ -213,7 +213,7 @@ export function ProgressForm({ info, tick }: { info: Info; tick?: string }) {
           <Field label="Hole ID">
             <MaskedInput name="hole_id" mask={maskHoleId} list="holes" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="WKM-DD-0004" required value={f.hole_id} onValueChange={v => set("hole_id", v)} />
             <datalist id="holes">{holeList.map(h => <option key={h} value={h} />)}</datalist>
-            <span className="min-h-4 text-xs font-normal text-muted-foreground" id="holeinfo">{collar ? `${collar.hole_type ?? ""} · ${collar.prospect || "—"} · planned ${collar.planned_depth_m ?? "—"} m · total ${collar.total_depth_m ?? "—"} m` : ""}</span>
+            <span className="min-h-4 text-xs font-normal text-muted-foreground" id="holeinfo">{collar ? `${collar.hole_type ?? ""} · ${collar.prospect || "-"} · planned ${collar.planned_depth_m ?? "-"} m · total ${collar.total_depth_m ?? "-"} m` : ""}</span>
           </Field>
 
           {planned > 0 && hid && (
@@ -246,7 +246,7 @@ export function ProgressForm({ info, tick }: { info: Info; tick?: string }) {
             <Field label="Capaian (m)"><Input name="ach_m" readOnly value={hid ? deepest.toFixed(2) : ""} /></Field>
             <Field label="Capaian (%)"><Input name="ach_pct" readOnly value={collar?.planned_depth_m > 0 && hid ? ((deepest / collar.planned_depth_m) * 100).toFixed(1) : ""} /></Field>
           </div>
-          <Field label="Layer"><Select name="layer" value={f.layer} onChange={e => set("layer", e.target.value)}><option value="">—</option>{data.layers.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}</Select></Field>
+          <Field label="Layer"><Select name="layer" value={f.layer} onChange={e => set("layer", e.target.value)}><option value="">-</option>{data.layers.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}</Select></Field>
 
           <Dyn open={rules.core} id="corebox">
             <fieldset className="flex flex-col gap-3 rounded-lg border p-3"><legend className="px-1 text-sm font-semibold text-brand">Core result</legend>
@@ -260,7 +260,7 @@ export function ProgressForm({ info, tick }: { info: Info; tick?: string }) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Downtime (jam)"><Input name="downtime_hours" type="number" step="0.25" min="0" max={data.maxDt} inputMode="decimal" value={f.downtime_hours} onChange={e => set("downtime_hours", e.target.value)} /></Field>
             <Field label="Alasan downtime">
-              <Select name="downtime_reason" required={rules.reasonReq} aria-required={rules.reasonReq} value={f.downtime_reason} onChange={e => set("downtime_reason", e.target.value)}><option value="">—</option>{data.reasons.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}</Select>
+              <Select name="downtime_reason" required={rules.reasonReq} aria-required={rules.reasonReq} value={f.downtime_reason} onChange={e => set("downtime_reason", e.target.value)}><option value="">-</option>{data.reasons.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}</Select>
             </Field>
           </div>
 

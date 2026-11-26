@@ -106,7 +106,7 @@ export function parseTable(pages) {
 // "<0.01" -> half DL, "-" "/" "" -> null; returns {v, flag}
 export function readValue(s) {
   const t = String(s ?? '').trim().replace(',', '.');
-  if (t === '' || t === '-' || t === '/' || t === '—') return { v: null };
+  if (t === '' || t === '-' || t === '/' || t === '\u2014') return { v: null };
   const lt = t.match(/^<\s*(\d*\.?\d+)$/); if (lt) return { v: +lt[1] / 2, flag: 'below_dl', dl: +lt[1] };
   if (/^-?\d*\.?\d+$/.test(t)) return { v: +t };
   return { v: null, flag: 'bad', raw: t };

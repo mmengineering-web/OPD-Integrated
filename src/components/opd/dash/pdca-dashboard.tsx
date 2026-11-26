@@ -8,6 +8,8 @@ import { makeClient } from "@/lib/opd/session.js";
 import { projectAccess } from "@/lib/opd/auth-core.js";
 import * as ETL from "@/lib/opd/etl-client.js";
 import { buildDash, dayDetail, daysBetween, explorerColumns, explorerSeries, PRESETS, rangeFor, TABLE_INFO } from "@/lib/opd/dash-model.js";
+import { ScrollStrip } from "@/components/ui/scroll-strip";
+import { DateRange } from "@/components/opd/dash/date-range";
 import { REPORTS, ReportsView, type ReportId } from "@/components/opd/dash/reports";
 import { Bullet, C, DayChart, HBars, nf, Parts, Ring, SITE_COLOR, short, Spark, dlabel } from "@/components/opd/dash/charts";
 
@@ -107,18 +109,16 @@ export function PdcaDashboard({ access, load, now }: { access: Access | null; lo
   return (
     <div className="space-y-4" data-pdca>
       {/* ---- filters ---- */}
-      <Card className="gap-3 lg:sticky lg:top-[calc(var(--topbar-h,3.5rem)+0.25rem)] lg:z-[15] bg-card/95 p-3 backdrop-blur lg:flex-row lg:items-center" data-filters>
+      <Card className="relative z-20 gap-3 lg:sticky lg:top-[calc(var(--topbar-h,3.5rem)+0.25rem)] bg-card/95 p-3 backdrop-blur lg:flex-row lg:items-center" data-filters>
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Sites">
           <button type="button" aria-pressed={all} onClick={() => { setSel(null); setPicked(null); }} className={cn("tap h-8 rounded-full border px-3 text-sm font-medium", all ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>All sites</button>
           {siteList.map((s) => <button key={s} type="button" aria-pressed={chosen.includes(s) && !all} onClick={() => toggle(s)} className={cn("tap inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium", chosen.includes(s) && !all ? "border-primary bg-accent" : "bg-card hover:bg-accent")}><span className="size-2 rounded-full" style={{ background: SITE_COLOR[s] }} aria-hidden />{s}</button>)}
           {!siteList.length && <span className="text-sm text-muted-foreground">No site project is open to your account.</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <div className="inline-flex flex-wrap rounded-lg border bg-muted/50 p-0.5" role="group" aria-label="Date range">
-            {PRESETS.map((p: { id: string; label: string }) => <button key={p.id} type="button" aria-pressed={preset === p.id} onClick={() => { if (p.id === "custom") setCustom(range); setPreset(p.id); setPicked(null); }} className={cn("tap h-7 rounded-md px-2.5 text-xs font-medium", preset === p.id ? "bg-card shadow-xs" : "text-muted-foreground hover:text-foreground")}>{p.label}</button>)}
-          </div>
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">From<input type="date" value={range.from} max={range.to} onChange={(e) => { setCustom({ from: e.target.value, to: range.to }); setPreset("custom"); }} className="h-8 rounded-md border bg-background px-2 text-sm text-foreground" /></label>
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">to<input type="date" value={range.to} min={range.from} onChange={(e) => { setCustom({ from: range.from, to: e.target.value }); setPreset("custom"); }} className="h-8 rounded-md border bg-background px-2 text-sm text-foreground" /></label>
+          <DateRange value={range} presets={PRESETS.filter((p: { id: string }) => p.id !== "custom")} preset={preset} max={today}
+            onPreset={(id) => { setPreset(id); setPicked(null); }}
+            onRange={(r) => { setCustom(r); setPreset("custom"); setPicked(null); }} />
           <button type="button" onClick={() => { cache.current.clear(); setKick((k) => k + 1); }} aria-label="Reload data" className="tap grid size-8 place-items-center rounded-md border hover:bg-accent">{busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}</button>
         </div>
       </Card>
@@ -134,14 +134,14 @@ export function PdcaDashboard({ access, load, now }: { access: Access | null; lo
           <h2 className="text-lg font-semibold leading-snug tracking-tight text-balance sm:text-xl">{busy && !m.last ? "Reading the site databases…" : m.story.headline}</h2>
         </Card>
 
-        <nav className="mt-4 flex gap-1 overflow-x-auto rounded-xl border bg-card p-1" role="tablist" aria-label="Dashboard sections">
+        <ScrollStrip className="mt-4 rounded-xl border bg-card p-1" role="tablist" aria-label="Dashboard sections">
           {TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} data-tab={id} onClick={() => setTab(id)} className={cn("tap h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium", tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>{PDCA_TAG[label] && <span className="mr-1.5 opacity-70">{PDCA_TAG[label]}</span>}{label}</button>)}
-        </nav>
+        </ScrollStrip>
 
-        <nav className="mt-2 flex items-center gap-1 overflow-x-auto rounded-xl border bg-card p-1" role="tablist" aria-label="Reports by table">
+        <ScrollStrip className="mt-2 rounded-xl border bg-card p-1" role="tablist" aria-label="Reports by table">
           <span className="shrink-0 px-2.5 text-xs font-medium text-muted-foreground">By table</span>
           {REPORTS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} data-tab={id} onClick={() => setTab(id)} className={cn("tap h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium", tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>{label}</button>)}
-        </nav>
+        </ScrollStrip>
 
         <div className="mt-4 min-w-0 space-y-4 [&_.grid>*]:min-w-0 [&_.grid]:min-w-0">
           {!m.last && !busy && <Empty>No production or shipment day is loaded in this range. Pick a wider range or load the days on the Uploads page.</Empty>}

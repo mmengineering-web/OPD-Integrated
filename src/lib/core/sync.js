@@ -283,7 +283,7 @@ export async function syncNow() {
     await pull();
     localStorage.setItem(`exp_last_sync_${info.site}`, new Date().toISOString());
   } catch (e) {
-    lastError = isAuth(e) ? 'Sesi habis — login ulang (data lokal aman).'
+    lastError = isAuth(e) ? 'Sesi habis. Login ulang (data lokal aman).'
       : isNet(e) ? '' : String(e.message || e);
   } finally { syncing = false; await emit(); }
 }

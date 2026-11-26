@@ -8,7 +8,7 @@ Location: Production > Dashboard > **Interactive** tab (default). The Looker Stu
 
 ## Use
 - Sites: "All sites" or one or more chips. Only sites the account can read appear (hub accounts see all).
-- Range: 7 days, 30 days, This month, Last month, Year to date, or custom dates (max 400 days). Presets end on the newest loaded day.
+- Range: one button that shows the dates. It opens a two-month calendar (one month on a phone). Press a day and slide to another day to pick the range, or click a start day and an end day. Quick ranges (7 days, 30 days, This month, Last month, Year to date) sit above the calendar and end on the newest loaded day. Max 400 days.
 - Overview: four KPI cards (range and year to date, verdict chip, pace tick), the cycle in four sentences, cumulative actual vs plan (click a day for site detail), site table, first actions.
 - Plan: annual plan (RKAB), required vs current t/day, year-end projection, plan by site.
 - Do: grades, shipment, overburden/stripping, contractors, stock, fuel, manpower, hauling, construction, exploration, lab, barges.

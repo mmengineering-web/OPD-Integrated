@@ -258,7 +258,7 @@ label:has(:required) > .lbl::before { content: ""; display: inline-block; width:
 .mlp-top input[type=checkbox]{margin:0}
 .mlp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;cursor:pointer}
 .mlp-top button{width:1.8rem;height:1.8rem;font:inherit;color:var(--foreground);background:var(--background);border:1px solid var(--input);border-radius:var(--radius-sm);cursor:pointer}
-.mlp-top button:hover{background:var(--accent)}
+@media (hover:hover) and (pointer:fine){.mlp-top button:hover{background:var(--accent)}}
 .mlp-top button:disabled{opacity:.35;cursor:default}
 .mlp-ed{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:.5rem 0 .25rem}
 .mlp-ed label{margin:0;font-size:.75rem;font-weight:400;color:var(--muted-foreground)}
@@ -276,7 +276,7 @@ label:has(:required) > .lbl::before { content: ""; display: inline-block; width:
 
 /* vanilla-compat controls used by the imperative map panel, PDF dialog and layer manager */
 .mapx .btn,.mpdf .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:var(--control-h);padding:.35rem 1rem;font:inherit;font-size:.875rem;font-weight:500;color:var(--foreground);background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);cursor:pointer}
-.mapx .btn:hover,.mpdf .btn:hover{background:var(--accent)}
+@media (hover:hover) and (pointer:fine){.mapx .btn:hover,.mpdf .btn:hover{background:var(--accent)}}
 .mapx .btn.small,.mpdf .btn.small{min-height:var(--control-h-sm);padding:.2rem .7rem;font-size:.8125rem}
 .mapx .btn.primary,.mpdf .btn.primary{color:var(--primary-foreground);background:var(--primary);border-color:var(--primary)}
 .mapx .btn.danger{color:var(--danger);border-color:var(--danger-border)}
@@ -357,7 +357,7 @@ label:has(:required) > .lbl::before { content: ""; display: inline-block; width:
 .land-sec h2{margin:0 0 var(--sp-8);font-family:var(--font-serif);font-weight:450;font-size:clamp(1.75rem,1.2rem + 2vw,2.5rem);line-height:1.1;letter-spacing:-.02em}
 .land-mod{display:flex;flex-direction:column;gap:var(--sp-3);min-height:15rem;padding:var(--sp-6);text-decoration:none;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:1.25rem;box-shadow:var(--shadow-xs);transition:transform var(--dur-3) var(--ease-out),box-shadow var(--dur-3) var(--ease-out)}
 .land-sec-alt .land-mod{background:var(--page)}
-a.land-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+@media (hover:hover) and (pointer:fine){a.land-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}}
 .land-mod-off{background:var(--muted);color:var(--muted-foreground)}
 .land-mod-off h3{color:var(--foreground)}
 .land-state{padding:.15rem .6rem;font-size:.75rem;font-weight:500;color:var(--muted-foreground);background:var(--secondary);border:1px solid var(--border);border-radius:var(--radius-full)}
@@ -394,8 +394,8 @@ a.land-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
   .lift:hover .lift-ico { transform: scale(1.08) rotate(-4deg); background: var(--primary); color: var(--primary-foreground); }
 }
 /* .tap: small controls that only need a press response */
-.tap { transition: transform var(--dur-1) var(--ease), background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
-.tap:active { transform: scale(.95); }
+.tap { transition: transform 160ms var(--ease-out-strong), background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
+.tap:active { transform: scale(.97); }
 /* links slide a little toward where they go */
 .nudge { transition: transform var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
 @media (hover: hover) { .nudge:hover { transform: translateX(2px); } }
@@ -487,7 +487,7 @@ input[readonly]{box-shadow:none;border-style:dashed}
 
 /* buttons that are not the shadcn Button (map panel, layer manager) */
 .mapx .btn,.mpdf .btn,.mlp-toggle,.mlp-top button{background:var(--card);border:0;box-shadow:var(--neu-out-xs);border-radius:var(--radius-lg)}
-.mapx .btn:hover,.mpdf .btn:hover{background:var(--card);box-shadow:var(--neu-out-sm)}
+@media (hover:hover) and (pointer:fine){.mapx .btn:hover,.mpdf .btn:hover{background:var(--card);box-shadow:var(--neu-out-sm)}}
 .mapx .btn:active,.mpdf .btn:active,.mlp-toggle:active,.mlp-top button:active{box-shadow:var(--neu-in-sm)}
 .mapx .btn.primary,.mpdf .btn.primary{background:var(--primary);box-shadow:var(--neu-out-xs)}
 
@@ -497,7 +497,7 @@ input[readonly]{box-shadow:none;border-style:dashed}
 /* press feedback: .lift cards sink instead of scaling */
 .lift:active{transform:none;box-shadow:var(--neu-in-sm)}
 @media (hover:hover){.lift:hover{transform:translateY(-1px);box-shadow:var(--neu-out)}}
-a.land-mod:hover{box-shadow:var(--shadow-lg)}
+@media (hover:hover) and (pointer:fine){a.land-mod:hover{box-shadow:var(--shadow-lg)}}
 .land-card{box-shadow:var(--neu-out)}
 .land-card[data-on]{background:var(--card);box-shadow:var(--shadow-lg)}
 .land-sec-alt{background:var(--page);border-block:0}
@@ -516,3 +516,38 @@ thead th,.sticky.top-0.bg-muted{background:var(--muted)}
 button.rounded-full.border.bg-card,button.rounded-full.border.bg-card:not([aria-pressed="true"]){border-color:transparent;box-shadow:var(--neu-out-xs)}
 button.rounded-full.border.bg-card:active{box-shadow:var(--neu-in-sm)}
 button.rounded-full.border.bg-primary{border-color:transparent;box-shadow:var(--neu-in-sm)}
+
+/* theme switch: the new theme is revealed by a circle that grows from the toggle button (animated in ui-state.ts) */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-old(root){z-index:1}
+::view-transition-new(root){z-index:2}
+
+/* scroll strip thumb: soft glow and a light sheen that runs while the row moves, is hovered or dragged */
+.strip-thumb{box-shadow:var(--neu-out-xs);transition:transform .14s ease-out,box-shadow .25s,filter .25s;
+  background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);background-size:220% 100%;background-position:130% 0;background-repeat:no-repeat}
+.strip-thumb[data-moving],.strip-thumb[data-drag]{animation:strip-sheen 1.1s linear infinite;box-shadow:0 0 0 1px color-mix(in srgb,var(--primary) 50%,transparent),0 0 14px color-mix(in srgb,var(--primary) 55%,transparent);filter:saturate(1.15)}
+.strip-thumb[data-drag]{transition:none;filter:saturate(1.3) brightness(1.05)}
+@keyframes strip-sheen{from{background-position:130% 0}to{background-position:-30% 0}}
+@media (prefers-reduced-motion:reduce){.strip-thumb{animation:none!important;transition:none}}
+/* every other horizontal scroller (tables, charts): a thin soft bar in the same colours */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--primary) 60%,transparent) transparent}
+*::-webkit-scrollbar{height:8px;width:8px}
+*::-webkit-scrollbar-track{background:transparent;border-radius:999px;box-shadow:var(--neu-in-sm)}
+*::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--primary) 60%,transparent);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--primary);background-clip:padding-box}
+
+/* v3.1 craft pass (from the emilkowalski/skills rules: strong ease-out curves, press scale .97, origin-aware entrances, hover only where hover exists) */
+:root{--ease-out-strong:cubic-bezier(.23,1,.32,1);--ease-in-out-strong:cubic-bezier(.77,0,.175,1)}
+html,body{overscroll-behavior:none}
+button,[role="tab"],[role="button"]{-webkit-user-select:none;user-select:none}
+[role="tab"]{transition:color 150ms ease,background-color 150ms ease,box-shadow 200ms var(--ease-out-strong),transform 160ms var(--ease-out-strong)}
+@media (hover:hover) and (pointer:fine){
+  .strip-wrap:hover .strip-thumb{animation:strip-sheen 1.1s linear infinite;box-shadow:0 0 0 1px color-mix(in srgb,var(--primary) 50%,transparent),0 0 14px color-mix(in srgb,var(--primary) 55%,transparent)}
+  .strip-track:hover{transform:scaleY(1.7)}
+}
+.strip-track{transform-origin:center;transition:transform 200ms var(--ease-out-strong),opacity 200ms var(--ease-out-strong)}
+/* popover: grows from its trigger (top right on desktop, top centre on a phone), never from nothing */
+.pop{transform-origin:top right;opacity:1;transform:none;transition:opacity 160ms var(--ease-out-strong),transform 160ms var(--ease-out-strong)}
+@starting-style{.pop{opacity:0;transform:scale(.97) translateY(-4px)}}
+@media (max-width:639px){.pop{transform-origin:top center}}
+@media (prefers-reduced-motion:reduce){@starting-style{.pop{transform:none}}.pop{transition:opacity 120ms linear}}

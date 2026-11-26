@@ -150,7 +150,7 @@ export function SampleForm({ info, tick }: { info: Info; tick?: string }) {
               onBlur={() => { sUi.hole = hid; if (!isEdit && f.from_m === "") set("from_m", String(lastTo(d.all, hid) || "")); }} />
             <datalist id="sholes">{holes.map(h => <option key={h} value={h} />)}</datalist>
           </Field>
-          <div id="sinfo" className="-mt-2 min-h-4 text-xs text-muted-foreground">{hid ? `Dibor sampai ${c0.deepest ?? "—"} m · sampel terdaftar ${mine.length}${mine.length ? ` (sampai ${lastTo(d.all, hid)} m)` : ""}` : ""}</div>
+          <div id="sinfo" className="-mt-2 min-h-4 text-xs text-muted-foreground">{hid ? `Dibor sampai ${c0.deepest ?? "-"} m · sampel terdaftar ${mine.length}${mine.length ? ` (sampai ${lastTo(d.all, hid)} m)` : ""}` : ""}</div>
           <Field label="Nomor sampel"><Input name="sample_no" required autoCapitalize="characters" value={f.sample_no} onChange={e => set("sample_no", e.target.value)} /></Field>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Dari (m)"><Input name="from_m" type="number" step="0.01" inputMode="decimal" required value={f.from_m} onChange={e => set("from_m", e.target.value)} /></Field>

@@ -31,8 +31,8 @@ export async function renderCollarMap(el, pts) {
   const L = window.L;
   el.innerHTML = ''; delete el._leaflet_id;
   const map = cur = L.map(el, { zoomControl: true, preferCanvas: true });
-  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics' });
-  const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, OpenStreetMap contributors' });
+  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri. Source: Esri, Maxar, Earthstar Geographics' });
+  const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri. Esri, HERE, Garmin, USGS, OpenStreetMap contributors' });
   sat.addTo(map); L.control.layers({ 'Esri satellite': sat, 'Esri topographic': topo }, {}, { collapsed: true }).addTo(map);
   const grp = L.featureGroup();
   for (const p of pts) {

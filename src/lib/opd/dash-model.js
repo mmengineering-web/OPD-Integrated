@@ -237,7 +237,7 @@ export function buildDash(raw, { from, to }) {
   const p = totals.prod, s = totals.ship;
   const fmtT = (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(2)} Mt` : v >= 1e3 ? `${(v / 1e3).toFixed(1)} kt` : `${Math.round(v)} t`);
   const story = last ? {
-    headline: `${fmtT(s.range.actual)} shipped and ${fmtT(p.range.actual)} produced from ${from} to ${to}${s.range.plan > 0 ? ` — shipment ${s.range.pct >= 100 ? "reached" : "is at"} ${s.range.pct.toFixed(0)}% of plan` : ""}.`,
+    headline: `${fmtT(s.range.actual)} shipped and ${fmtT(p.range.actual)} produced from ${from} to ${to}${s.range.plan > 0 ? `. Shipment ${s.range.pct >= 100 ? "reached" : "is at"} ${s.range.pct.toFixed(0)}% of plan` : ""}.`,
     plan: p.ytd.plan > 0 || s.ytd.plan > 0 ? `The approved plan for the year is ${fmtT(p.ytd.plan)} of production and ${fmtT(s.ytd.plan)} of shipment. ${((elapsed("year", last)) * 100).toFixed(0)}% of the year has passed.` : "No annual plan is loaded in the calendar for this range.",
     do: `${fmtT(oreT)} of ore and ${fmtT(obT)} of overburden moved${strip != null ? `, a stripping ratio of ${strip.toFixed(2)}` : ""}. Year to date: ${fmtT(p.ytd.actual)} produced, ${fmtT(s.ytd.actual)} shipped.`,
     check: `Year to date, production is at ${p.ytd.pct == null ? "no plan" : p.ytd.pct.toFixed(0) + "% of the annual plan"} and shipment at ${s.ytd.pct == null ? "no plan" : s.ytd.pct.toFixed(0) + "%"}, ${s.ytd.verdict.label === "BEHIND PACE" || p.ytd.verdict.label === "BEHIND PACE" ? "behind the time that has passed" : "in line with the time that has passed"}.`,

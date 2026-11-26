@@ -217,7 +217,7 @@ const BUILD = {
     pair(v.planned_x, v.planned_y, 'planned_lat', 'planned_lon', 'Planned');
     pair(v.asbuilt_x, v.asbuilt_y, 'asbuilt_lat', 'asbuilt_lon', 'As-built');
     rangeErr(errors, 'Dip', v.dip_deg, -90, 90); rangeErr(errors, 'Azimuth', v.azimuth_deg, 0, 360);
-    if (v.hole_id && st.collars.some(c => c.hole_id === v.hole_id)) errors.push(`Duplikat — Hole ID ${v.hole_id} sudah ada (di data atau baris sebelumnya).`);
+    if (v.hole_id && st.collars.some(c => c.hole_id === v.hole_id)) errors.push(`Duplikat: Hole ID ${v.hole_id} sudah ada (di data atau baris sebelumnya).`);
     const rec = { id: crypto.randomUUID(), hole_id: v.hole_id, hole_type: v.hole_type, prospect: v.prospect, status: v.status,
       planned_lat: v.planned_lat, planned_lon: v.planned_lon, planned_elev: v.planned_elev, planned_depth_m: v.planned_depth_m,
       asbuilt_lat: v.asbuilt_lat, asbuilt_lon: v.asbuilt_lon, asbuilt_elev: v.asbuilt_elev, gps_accuracy_m: null, total_depth_m: v.total_depth_m,
@@ -247,7 +247,7 @@ const BUILD = {
     if (!errors.length) {
       const sibs = st.progress.filter(x => x.hole_id === rec.hole_id);
       const same = sibs.find(x => x.from_m === rec.from_m && x.to_m === rec.to_m && x.work_date === rec.work_date && x.shift === rec.shift);
-      if (same) errors.push(`Duplikat — ${rec.hole_id} ${rec.from_m}–${rec.to_m} m, ${rec.work_date} ${rec.shift} sudah ada.`);
+      if (same) errors.push(`Duplikat: ${rec.hole_id} ${rec.from_m}–${rec.to_m} m, ${rec.work_date} ${rec.shift} sudah ada.`);
       else {
         const val = validateProgress(rec, { collar, siblings: sibs });
         errors.push(...val.errors); warns.push(...val.warns);
@@ -282,7 +282,7 @@ const BUILD = {
     if (!collar) { /* refused above, or no hole id */ }
     else if (collar?.total_depth_m != null && v.depth_m > collar.total_depth_m) errors.push(`Depth ${v.depth_m} m melebihi total depth lubang (${collar.total_depth_m} m).`);
     const rec = { id: crypto.randomUUID(), hole_id: v.hole_id, depth_m: v.depth_m, dip_deg: v.dip_deg, azimuth_deg: v.azimuth_deg, method: v.method, survey_date: v.survey_date, remarks: v.remarks, is_deleted: false };
-    if (!errors.length && st.surveys.some(s => s.hole_id === rec.hole_id && Number(s.depth_m) === rec.depth_m)) errors.push(`Duplikat — survey ${rec.hole_id} pada ${rec.depth_m} m sudah ada.`);
+    if (!errors.length && st.surveys.some(s => s.hole_id === rec.hole_id && Number(s.depth_m) === rec.depth_m)) errors.push(`Duplikat: survey ${rec.hole_id} pada ${rec.depth_m} m sudah ada.`);
     if (!errors.length && (allow || !warns.length)) st.surveys.push(rec);
     return rec;
   },
@@ -300,7 +300,7 @@ const BUILD = {
     const rec = { id: crypto.randomUUID(), sample_no: v.sample_no, hole_id: v.hole_id, from_m: v.from_m, to_m: v.to_m, sample_type: v.sample_type, status: v.status,
       sampled_date: v.sampled_date, sent_date: v.sent_date, lab: v.lab, batch_id: v.batch_id, remarks: v.remarks, is_deleted: false };
     if (!errors.length) {
-      if (st.samples.some(s => s.sample_no === rec.sample_no)) errors.push(`Duplikat — sample no ${rec.sample_no} sudah ada.`);
+      if (st.samples.some(s => s.sample_no === rec.sample_no)) errors.push(`Duplikat: sample no ${rec.sample_no} sudah ada.`);
       else if (rec.sample_type === 'NORMAL') {
         const o = st.samples.find(s => s.hole_id === rec.hole_id && s.sample_type === 'NORMAL' && overlap(rec.from_m, rec.to_m, Number(s.from_m), Number(s.to_m)));
         if (o) errors.push(`Overlap dengan sampel ${o.sample_no} (${o.from_m}–${o.to_m} m) di lubang yang sama.`);
@@ -333,7 +333,7 @@ const BUILD = {
       duplicate_type: v.duplicate_type, duplicate_of_sample_no: v.duplicate_of_sample_no, source_type: 'excel', source_file: file || null, remarks: v.remarks, is_deleted: false };
     if (!errors.length) {
       const same = st.assays.find(a => a.hole_id === rec.hole_id && Number(a.from_m) === rec.from_m && Number(a.to_m) === rec.to_m && (a.sample_no || '') === (rec.sample_no || ''));
-      if (same) errors.push(`Duplikat — assay ${rec.hole_id} ${rec.from_m}–${rec.to_m} m${rec.sample_no ? ' (' + rec.sample_no + ')' : ''} sudah ada.`);
+      if (same) errors.push(`Duplikat: assay ${rec.hole_id} ${rec.from_m}–${rec.to_m} m${rec.sample_no ? ' (' + rec.sample_no + ')' : ''} sudah ada.`);
       else if (rec.sample_type === 'NORMAL') {
         const o = st.assays.find(a => a.hole_id === rec.hole_id && a.sample_type === 'NORMAL' && overlap(rec.from_m, rec.to_m, Number(a.from_m), Number(a.to_m)));
         if (o) errors.push(`Overlap dengan assay ${o.sample_no || 'tanpa nomor'} (${o.from_m}–${o.to_m} m) di lubang yang sama.`);

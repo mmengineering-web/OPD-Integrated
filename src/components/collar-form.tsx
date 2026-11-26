@@ -116,7 +116,7 @@ export function CollarForm({ info, tick }: { info: Info; tick?: string }) {
     setGps("Mengambil posisi…");
     navigator.geolocation.getCurrentPosition(p => {
       setF(x => ({ ...x, asbuilt_lat: p.coords.latitude.toFixed(7), asbuilt_lon: p.coords.longitude.toFixed(7), asbuilt_elev: p.coords.altitude != null ? p.coords.altitude.toFixed(1) : x.asbuilt_elev, gps_accuracy_m: p.coords.accuracy.toFixed(1) }));
-      setGps(`Akurasi ±${p.coords.accuracy.toFixed(1)} m` + (p.coords.accuracy > d.gpsMax ? ` — melebihi batas ${d.gpsMax} m, ulangi di area terbuka` : ""));
+      setGps(`Akurasi ±${p.coords.accuracy.toFixed(1)} m` + (p.coords.accuracy > d.gpsMax ? `. Melebihi batas ${d.gpsMax} m, ulangi di area terbuka` : ""));
     }, err => setGps("Gagal: " + err.message), { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
   }
 
@@ -131,7 +131,7 @@ export function CollarForm({ info, tick }: { info: Info; tick?: string }) {
           <CardTitle>{isEdit ? "Edit" : "Input"} collar</CardTitle>
           <Field label="Pilih dari rencana (opsional)" hint={planned.length ? `${planned.length} lubang rencana (status "rencana"). Pilih untuk melengkapi lubang yang sudah direncanakan (koordinat as-built, status), atau biarkan untuk lubang baru.` : 'Belum ada lubang rencana di HP ini. Daftar ini terisi dari collar berstatus "rencana"; tambahkan lewat form ini atau sinkronkan setelah login.'}>
             <Select id="pick" value={rec?.id ?? ""} onChange={e => { const c = d.all.find(x => x.id === e.target.value); if (c) { setRec(c); setF(toForm(c)); ph.reset(); } else reset(); }}>
-              <option value="">— lubang baru / tak terencana —</option>{planned.map(c => <option key={c.id} value={c.id}>{c.hole_id}</option>)}
+              <option value="">Lubang baru / tak terencana</option>{planned.map(c => <option key={c.id} value={c.id}>{c.hole_id}</option>)}
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -140,7 +140,7 @@ export function CollarForm({ info, tick }: { info: Info; tick?: string }) {
           </div>
           <Button type="button" variant="outline" size="sm" className="w-fit" onClick={genId} id="b-genid">Buat Hole ID baru (tak terencana)</Button>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Prospect"><Select name="prospect" value={f.prospect} onChange={e => set("prospect", e.target.value)}><option value="">— pilih —</option>
+            <Field label="Prospect"><Select name="prospect" value={f.prospect} onChange={e => set("prospect", e.target.value)}><option value="">Pilih</option>
               {prospects.map(p => <option key={p.prospect_code} value={p.prospect_code}>{p.prospect_name}</option>)}
               {unknownProspect && <option value={f.prospect}>{f.prospect} (tidak terdaftar)</option>}</Select></Field>
             <Field label="Status"><Select name="status" value={f.status} onChange={e => set("status", e.target.value)}>{d.statuses.map((t: any) => <option key={t.code} value={t.code}>{t.label}</option>)}</Select></Field>
