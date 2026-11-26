@@ -5,7 +5,7 @@ One installable web app (PWA) for a mining company: **one login** for production
 - Live: https://technicalproductionportal.vercel.app
 - Repo: https://github.com/mmengineering-web/OPD-Integrated
 - Owner: Gera. Portfolio project (non-commercial), but built to be fully functional.
-- Version: **4.4.0** (Phase 4, step 4.4; Python reader `public/etl/manifest.json` 4.4-6). Last updated: 24 Nov 2026
+- Version: **4.5.0** (Phase 4, step 4.5; Python reader `public/etl/manifest.json` 4.4-6, unchanged). Last updated: 25 Nov 2026
 
 > **Security.** This repository contains only Supabase **publishable (anon) keys**, which are safe in a browser because access is enforced by Row Level Security. Never commit a service-role key, a database connection string, a password, a `.env`, or any site data (master workbooks, `*.ndjson` dumps, daily reports). `.gitignore` blocks the common ones. Site data and user names must stay out of this public repo.
 
@@ -42,7 +42,7 @@ Mining operations produce data in separate places: daily production reports, dri
 |---|---|
 | **Portal** | One sign-in. Tiles per site and module (Production, Exploration), greyed out where the person has no usable account. |
 | **Exploration** | Offline-first field data entry (collars, drilling progress, distribution hours, samples), import, reports, dashboard, data QC, map, 3D drill holes. |
-| **Production** | Dashboard (Looker), guides, and **Uploads** (Phase 4): the site's daily file is read in the browser and loaded into `etl_*` tables. WKM and BM: Daily Report PDF. TMS: Daily Production Report `.xlsx`, Realisasi Barging `.xlsx`, stock register `.xlsx`, hazard inspection `.docx`. Test mode (shadow) until the owner switches a site live. See `docs/OPD_UPLOAD_MODULE.md`. |
+| **Production** | Dashboard (Looker), guides, and **Uploads** (Phase 4): the site's daily file is read in the browser and loaded into `etl_*` tables. WKM and BM: Daily Report PDF. TMS: Daily Production Report `.xlsx`, Realisasi Barging `.xlsx`, stock register `.xlsx`, hazard inspection `.docx`. Test mode (shadow) until the owner switches a site live; a **Compare week** card on the page shows each day against the current process and the clean days in a row. See `docs/OPD_UPLOAD_MODULE.md` and `docs/GO_LIVE_RUNBOOK.md`. |
 | **Head office / Hub** | Planned (Phase 5): all-sites view, documents, tools, help. |
 
 Sites in scope: WKM, CDSM, BM, TMS, IBN, TPB, AJB, CDS. Only WKM and CDSM have an exploration project today; BM, TMS and WKM have production projects. The rest show as "Planned" on the home page.
@@ -56,7 +56,7 @@ Sites in scope: WKM, CDSM, BM, TMS, IBN, TPB, AJB, CDS. Only WKM and CDSM have a
 | 1 | Login foundation: `/login/`, portal, `/explo/`, legacy bridge, service worker, security headers. Redesign: Laterite/Strata palette, public landing page, interactive hero deck, mobile fixes, breadcrumbs. | **Done** |
 | 2 | Exploration uses the portal session (`attachSession`), site switcher, guest mode kept, portal sign-out clears Exploration server data, Portal › Exploration breadcrumb. | **Built and tested on the fake backend** (real-account and phone tests still open) |
 | 3 | Cutover: same address, data stays on phones. See `docs/CUTOVER.md`. | Prepared |
-| 4 | Production upload without Excel: browser-side parsers (Pyodide) for WKM/BM/TMS, `etl_01` to `etl_05` SQL, shadow (test) mode, compare, undo. Steps 4.1 to 4.4 built; 4.5 (compare week and go-live per site) not started. | **Built, test mode** (compare week next) |
+| 4 | Production upload without Excel: browser-side parsers (Pyodide) for WKM/BM/TMS, `etl_01` to `etl_06` SQL, shadow (test) mode, compare, undo. Steps 4.1 to 4.5 built: 4.5 adds the Compare week card and the owner go-live and rollback tools. | **Built, test mode.** Compare week and go-live are run per site by the owner (`docs/GO_LIVE_RUNBOOK.md`) |
 | 5 | Hub / All sites, documents, tools, help. | Planned |
 
 Phase 4 detail and the per-step status are in `docs/PHASE4_EXCEL_FREE_DESIGN.md`; the operator and admin guide is `docs/OPD_UPLOAD_MODULE.md`.
@@ -279,7 +279,7 @@ OPD/
 ├─ README.md                    this file
 ├─ docs/                        handbook, context, upload module, Phase 4 design, cutover, phone tests, UX rules
 ├─ supabase/
-│   ├─ sql/                     op_profile.sql, etl_01 to etl_05 (run per site project, in order)
+│   ├─ sql/                     op_profile.sql, etl_01 to etl_06 (run per site project, in order)
 │   └─ functions/op-admin-users Edge Function (user administration)
 ├─ public/
 │   ├─ etl/                     upload reader: worker, manifest (version), Python parsers, site configs, wheels
@@ -328,7 +328,8 @@ Configuration: Supabase URL and publishable key per project in `src/lib/opd/conf
 | Unit | `npm run test:unit` | OPD auth (fan-out, roles, `safeNext`, portal model), rules evaluator, RoA/QC, dashboard calc, 3D geometry, admin, masks, upload client (`etl_client`) |
 | Portal e2e | `node tests/opd_e2e.mjs` | Public home, deck interactions, login, portal redirect, breadcrumbs, sign-out, offline paths |
 | Exploration e2e | `python3 tests/e2e.py`, `e2e_data.py`, `e2e_dash.py`, `e2e_forms.py`, `e2e_3d.py`, `e2e_sw.py` | Shell, forms, records, import, settings, dashboard, QC, map, 3D, service worker takeover |
-| ETL SQL | `tests/etl_*_test.sql` | Run on a scratch Postgres 16 (core, history, safety S1-S7) |
+| ETL SQL | `tests/etl_*_test.sql` | Run on a scratch Postgres 16 (core, history, safety S1-S7, compare and go-live C1-C19, G1-G14) |
+| Compare week page | `node tests/compare_e2e.mjs` | After `npm run build:test`: the card on Uploads (progress, reason, check again, role gating, live, not installed) |
 | Live smoke | `python3 tests/live_smoke.py` | Read-only check of the real site; credentials from environment variables on your own computer |
 | Phones | `docs/PHONE_TESTS.md` | Android and iPhone checklist |
 
@@ -399,7 +400,7 @@ Vercel redeploys on each push.
 - A password that differs in one project looks like "no account" there; that module is greyed out.
 - Roles on the portal come from profile tables; RLS still decides what is allowed.
 - The production profile table is `op_profile` (`supabase/sql/op_profile.sql`). A project without it shows "No profile".
-- Phase 4: compare week and go-live (step 4.5) not started. The preview is read-only; TMS hazard closures of earlier findings and TMS plan Replace are not built. First download of the reader is about 35 MB; not yet measured on site internet or a phone.
+- Phase 4: the compare week and go-live (step 4.5) are built but not yet run on real days; the owner starts them per site (`docs/GO_LIVE_RUNBOOK.md`). The preview is read-only; TMS hazard closures of earlier findings and TMS plan Replace are not built. First download of the reader is about 35 MB; not yet measured on site internet or a phone.
 - Explo Hub "All sites" tab: verify with a real hub account.
 - Only a fake backend has been exercised in automated tests. A real-account smoke test against the live projects, and real-phone tests, are still open.
 - Landing nav links are hidden under 768 px; a mobile menu is not built yet.
@@ -414,6 +415,7 @@ Vercel redeploys on each push.
 | `docs/OPD_CONTEXT.md` | Concept, decisions and memory |
 | `docs/OPD_UPLOAD_MODULE.md` | Upload module: operator guide, architecture, test mode, go-live |
 | `docs/PHASE4_EXCEL_FREE_DESIGN.md` | Phase 4 design and per-step status |
+| `docs/GO_LIVE_RUNBOOK.md` | Compare week, go-live and rollback per site (step 4.5) |
 | `docs/SUPERADMIN_SETUP.md` | User administration setup per project |
 | `docs/UX_RULES.md` | UI rules |
 | `docs/CUTOVER.md` | Domain swap, rollback, retirement runbook |

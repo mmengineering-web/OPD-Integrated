@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, FileText, Loader2, RotateCcw, ShieldCheck,
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/opd/breadcrumb";
+import { CompareWeek } from "@/components/opd/compare-week";
 import { AppFrame, PageHead, type Access } from "@/components/opd/app-frame";
 import { PROJECTS } from "@/lib/opd/config.js";
 import { projectAccess, canInput, ROLE_LABEL } from "@/lib/opd/auth-core.js";
@@ -22,13 +23,16 @@ type ShipUpdate = { decision: string; kind: string; date: string; contractor: st
 type ShipCmp = { date: string; contractor: string; old: Record<string, number>; now: Record<string, number> };
 const SHIP_COLS = ["DAY", "WTD", "MTD", "YTD"] as const;
 type ShipOut = { rows: unknown[]; raw: Record<string, unknown[]>; changes: { date: string; contractor: string; old: number | null; new: number }[]; skipped: { DATE: string; CONTRACTOR: string; reason: string }[]; days: string[] };
-type Parsed = { ship_updates?: ShipUpdate[]; report_date: string; site: string; actual: Row[]; raw: Record<string, unknown[]>; barge?: BargeRow[]; stock?: StockItem[]; plan?: { changes: PlanChange[]; days: string[]; groups: string[]; rows: unknown[]; raw: Record<string, unknown[]> } | null; log: Issue[]; summary: { rows: number; by_category: Record<string, number> } };
+type Parsed = { cons_new?: string[]; cons_choices?: string[]; ship_updates?: ShipUpdate[]; report_date: string; site: string; actual: Row[]; raw: Record<string, unknown[]>; barge?: BargeRow[]; stock?: StockItem[]; plan?: { changes: PlanChange[]; days: string[]; groups: string[]; rows: unknown[]; raw: Record<string, unknown[]> } | null; log: Issue[]; summary: { rows: number; by_category: Record<string, number> } };
 type Target = { project: { id: string; site: string }; site: string; kind: string; role: string };
 type LoadResult = { target?: string; actual_inserted?: number; actual_deleted?: number };
 type Diff = { counts: { same: number; changed: number; only_portal: number; only_prod: number } };
 type Batch = { batch_id: string; report_date: string; status: string; target: string | null; source_file: string | null };
 const why = (e: unknown) => (e instanceof Error ? e.message : String(e));
-type Phase = "idle" | "starting" | "history" | "reading" | "parsed" | "loading" | "loaded" | "undone";
+type Phase = "idle" | "starting" | "history" | "reading" | "parsed" | "loading" | "loaded" | "undone" | "queued" | "bulk" | "bulkdone";
+type QState = "wait" | "reading" | "loading" | "loaded" | "blocked" | "failed" | "skipped";
+type QItem = { key: string; file: File; date: string; state: QState; msg?: string; rows?: number; warn?: number; batch?: string; newCons?: number };
+const Q_LABEL: Record<QState, string> = { wait: "Waiting", reading: "Reading", loading: "Loading", loaded: "Loaded", blocked: "Blocked", failed: "Failed", skipped: "Not run" };
 
 const fmtDate = (d: string) => new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const cell = (v: unknown) => (v == null || v === "" ? "–" : typeof v === "number" ? (Math.round(v * 100) / 100).toLocaleString("en-US") : String(v));
@@ -78,6 +82,27 @@ function useReader() {
   return { start, ask, status };
 }
 
+/** The three stages of reading one file, with the one that is running animated. */
+function Steps({ phase, hist, note }: { phase: Phase; hist: { done: number; total: number }; note?: string }) {
+  const order = ["starting", "history", "reading", "loading"];
+  const at = order.indexOf(phase);
+  const rows = [["starting", "Starting the reader"], ["history", hist.total ? `Reading the site history (${hist.done}/${hist.total})` : "Reading the site history"], ["reading", "Reading the report and working out totals"]];
+  const pct = phase === "history" && hist.total ? Math.round((hist.done / hist.total) * 100) : phase === "reading" ? 92 : phase === "starting" ? 8 : 100;
+  return (
+    <div className="w-full max-w-[34rem] text-left" role="status" aria-live="polite">
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${pct}%` }} /></div>
+      <ul className="mt-3 space-y-1.5 text-sm">
+        {rows.map(([k, label], i) => (
+          <li key={k} className={`flex items-center gap-2 ${i === at ? "font-medium" : i < at ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
+            {i < at ? <CheckCircle2 className="size-4 text-[var(--success)]" aria-hidden /> : i === at ? <Loader2 className="size-4 animate-spin text-brand" aria-hidden /> : <span className="size-4 rounded-full border" aria-hidden />}{label}
+          </li>
+        ))}
+      </ul>
+      {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
 function Stat({ label, value, tone }: { label: string; value: React.ReactNode; tone?: string }) {
   return <div className="rounded-lg border bg-card px-3 py-2"><div className="text-xs text-muted-foreground">{label}</div><div className={`mt-0.5 text-lg font-semibold tabular-nums ${tone ?? ""}`}>{value}</div></div>;
 }
@@ -110,7 +135,10 @@ function View({ access }: { access: Access }) {
   const [shown, setShown] = useState(150);
   const [sev, setSev] = useState<Record<string, boolean>>({ ERROR: true, WARN: true, RECON: false, INFO: false });
   const [drag, setDrag] = useState(false);
-  const busy = ["starting", "history", "reading", "loading"].includes(phase);
+  const [consPick, setConsPick] = useState<Record<string, string>>({});
+  const [queue, setQueue] = useState<QItem[]>([]);
+  const stopBulk = useRef(false);
+  const busy = ["starting", "history", "reading", "loading", "bulk"].includes(phase);
 
   const [tick, setTick] = useState(0);
   const refresh = () => setTick((n) => n + 1);
@@ -126,24 +154,81 @@ function View({ access }: { access: Access }) {
     return () => { live = false; };
   }, [client, tick]);
 
-  const reset = () => { setPhase("idle"); setFile(null); setParsed(null); setError(null); setBatch(null); setResult(null); setDiff(null); setBdiff(null); setReplacePlan(false); setTicked({}); setShipBatch(null); setShipMsg(null); setShipCmp([]); setCat(""); setQ(""); setShown(150); };
+  const reset = () => { setQueue([]); setConsPick({}); setPhase("idle"); setFile(null); setParsed(null); setError(null); setBatch(null); setResult(null); setDiff(null); setBdiff(null); setReplacePlan(false); setTicked({}); setShipBatch(null); setShipMsg(null); setShipCmp([]); setCat(""); setQ(""); setShown(150); };
 
-  async function pick(f: File | null | undefined) {
-    if (!f || !t || !client) return;
-    reset(); setFile(f);
-    const xl = t.kind === "tms";
-    if (!(xl ? /\.(xlsx|docx)$/i.test(f.name) : /\.pdf$/i.test(f.name))) { setError(xl ? "Choose a TMS report: the Daily Production Report, the barging file or the stock register (.xlsx), or the inspection report (.docx)." : "Choose the Daily Report as a PDF file."); return; }
+  const okName = (f: File) => (t?.kind === "tms" ? /\.(xlsx|docx)$/i.test(f.name) : /\.pdf$/i.test(f.name));
+  const badName = () => (t?.kind === "tms" ? "Choose a TMS report: the Daily Production Report, the barging file or the stock register (.xlsx), or the inspection report (.docx)." : "Choose the Daily Report as a PDF file.");
+
+  /** Peek the day, read the site history and parse one file. The history is read again for every file, so a day always sees the days loaded before it. */
+  async function readOne(f: File, report?: (p: Phase) => void): Promise<Parsed> {
+    const bytes = await f.arrayBuffer();
+    const pk = await reader.ask<{ report_date: string }>({ type: "peek", kind: t!.kind, bytes: bytes.slice(0), name: f.name });
+    report?.("history"); setHist({ done: 0, total: 0 });
+    const history = await ETL.readHistory(client!, pk.report_date, (done: number, total: number) => setHist({ done, total }), { stockAll: t!.kind === "tms" });
+    report?.("reading");
+    return reader.ask<Parsed>({ type: "parse", kind: t!.kind, bytes, history, name: f.name });
+  }
+
+  async function pick(list: FileList | File[] | null | undefined) {
+    const files = Array.from(list ?? []);
+    if (!files.length || !t || !client) return;
+    reset();
+    if (files.some((f) => !okName(f))) { setError(badName()); return; }
+    if (files.length > 1) return pickMany(files);
+    const f = files[0]; setFile(f);
     try {
       setPhase("starting");
-      const bytes = await f.arrayBuffer();
-      const pk = await reader.ask<{ report_date: string }>({ type: "peek", kind: t.kind, bytes: bytes.slice(0), name: f.name });
-      setPhase("history"); setHist({ done: 0, total: 0 });
-      const history = await ETL.readHistory(client, pk.report_date, (done: number, total: number) => setHist({ done, total }), { stockAll: t.kind === "tms" });
-      setPhase("reading");
-      const out = await reader.ask<Parsed>({ type: "parse", kind: t.kind, bytes, history, name: f.name });
+      const out = await readOne(f, setPhase);
       setTicked(Object.fromEntries((out.ship_updates ?? []).map((u) => [`${u.date}|${u.contractor}`, u.decision === "Apply"])));
       setParsed(out); setCat(Object.keys(out.summary.by_category).sort()[0] ?? ""); setPhase("parsed");
     } catch (e) { setError(why(e)); setPhase("idle"); }
+  }
+
+  /** Several files: read the day of each, line them up oldest first and wait for one press of Load. */
+  async function pickMany(files: File[]) {
+    try {
+      setPhase("starting");
+      const dated: QItem[] = [];
+      for (const f of files) {
+        const pk = await reader.ask<{ report_date: string }>({ type: "peek", kind: t!.kind, bytes: (await f.arrayBuffer()), name: f.name });
+        dated.push({ key: `${f.name}|${f.size}|${dated.length}`, file: f, date: pk.report_date, state: "wait" });
+      }
+      dated.sort((x, y) => x.date.localeCompare(y.date) || x.file.name.localeCompare(y.file.name));
+      setQueue(dated); setPhase("queued");
+    } catch (e) { setError(why(e)); setPhase("idle"); }
+  }
+
+  /** Load the queue in date order. A day that cannot load stops the run, because the later days build on it. */
+  async function runBulk() {
+    if (!client || !t) return;
+    stopBulk.current = false; setError(null); setPhase("bulk");
+    const patch = (key: string, p: Partial<QItem>) => setQueue((q) => q.map((x) => (x.key === key ? { ...x, ...p } : x)));
+    let halted = false;
+    for (const it of queue) {
+      if (halted || stopBulk.current) { patch(it.key, { state: "skipped" }); continue; }
+      try {
+        patch(it.key, { state: "reading", msg: "Reading the report" });
+        const out = await readOne(it.file, (p) => patch(it.key, { msg: p === "history" ? "Reading the site history" : "Working out the totals" }));
+        const c = ETL.logCounts(out.log); const bl = ETL.blockers(out);
+        if (bl.length) { patch(it.key, { state: "blocked", msg: bl[0], warn: c.WARN }); halted = true; continue; }
+        patch(it.key, { state: "loading", msg: "Writing the rows", warn: c.WARN, rows: out.summary.rows, newCons: out.cons_new?.length });
+        const st = await ETL.stage(client, { site: out.site, parsed: out, fileName: it.file.name, replacePlan: false });
+        const res = await ETL.load(client, st.batch, { replacePlan: false });
+        if (res.target === "shadow") await ETL.compareRecord(client, st.batch).catch(() => null);
+        patch(it.key, { state: "loaded", msg: undefined, batch: st.batch });
+      } catch (e) { patch(it.key, { state: "failed", msg: why(e) }); halted = true; }
+    }
+    setPhase("bulkdone"); refresh();
+  }
+
+  /** A construction item that is new has no category yet: the person picks one, and the rows to load carry it. "" keeps the master's blank "-". */
+  function pickCons(item: string, category: string) {
+    setConsPick((c) => ({ ...c, [item]: category }));
+    setParsed((p) => p && {
+      ...p,
+      actual: p.actual.map((r) => (r.category === "CONS" && r.metric === item ? { ...r, metric_group: category || "-" } : r)),
+      raw: { ...p.raw, tblRAWCONS: (p.raw.tblRAWCONS ?? []).map((r) => { const x = r as Record<string, unknown>; return x["CONSTRUCTION ITEM"] === item ? { ...x, CONSCATEGORY: category || null } : r; }) },
+    });
   }
 
   async function doLoad() {
@@ -155,6 +240,7 @@ function View({ access }: { access: Access }) {
       const res = await ETL.load(client, st.batch, { replacePlan: withPlan });
       setBatch(st.batch); setResult(res); setPhase("loaded");
       if (res.target === "shadow") {
+        await ETL.compareRecord(client, st.batch).catch(() => null);   // stored on the server for the compare week; the load itself is already done
         setDiff((await ETL.shadowDiff(client, st.batch).catch(() => null)) as Diff | null);
         if (st.bargeRows) setBdiff((await ETL.bargeDiff(client, st.batch).catch(() => null)) as Diff | null);
       }
@@ -222,19 +308,43 @@ function View({ access }: { access: Access }) {
 
       {error && <Card className="mb-4 flex gap-3 border-[var(--danger-border)] bg-[var(--danger-bg)] p-4 text-sm" role="alert"><XCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" /><div><div className="font-medium text-[var(--danger)]">This did not work</div><div className="mt-0.5">{error}</div></div></Card>}
 
-      {(phase === "idle" || busy) && !parsed && (
-        <label onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
+      {client && <CompareWeek client={client} canExplain={canReplace} tick={tick} />}
+
+      {(phase === "idle" || busy) && !parsed && !queue.length && (
+        <label onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files); }}
           className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors ${drag ? "border-primary bg-accent" : "bg-card"} ${busy ? "pointer-events-none opacity-80" : ""}`}>
           {busy ? <Loader2 className="size-8 animate-spin text-brand" /> : <UploadCloud className="size-8 text-brand" />}
-          <div className="text-base font-medium">{busy ? (file?.name ?? "Working") : `Drop the ${t.site} ${t.kind === "tms" ? "report (.xlsx / .docx)" : "Daily Report"} here`}</div>
-          <div className="max-w-[52ch] text-sm text-muted-foreground">
-            {phase === "starting" && (reader.status || "Starting the reader. The first time takes about a minute; after that it is kept by your browser.")}
-            {phase === "history" && `Reading the site history (${hist.done}/${hist.total || "…"}).`}
-            {phase === "reading" && "Reading the report and working out the totals."}
-            {!busy && `or click to choose the ${t.kind === "tms" ? "file" : "PDF"}. The file stays in this browser and is not kept.`}
-          </div>
-          <input type="file" accept={t.kind === "tms" ? ".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf,.pdf"} className="sr-only" disabled={busy} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
+          <div className="text-base font-medium">{busy ? (file?.name ?? "Working") : `Drop the ${t.site} ${t.kind === "tms" ? "reports (.xlsx / .docx)" : "Daily Reports"} here`}</div>
+          {busy
+            ? <Steps phase={phase} hist={hist} note={phase === "starting" ? (reader.status || "The first time takes about a minute; after that the reader is kept by your browser.") : undefined} />
+            : <div className="max-w-[52ch] text-sm text-muted-foreground">or click to choose one or many {t.kind === "tms" ? "files" : "PDFs"}. Several files load oldest day first. The files stay in this browser and are not kept.</div>}
+          <input type="file" accept={t.kind === "tms" ? ".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf,.pdf"} className="sr-only" multiple disabled={busy} onChange={(e) => { pick(e.target.files); e.target.value = ""; }} />
         </label>
+      )}
+
+      {queue.length > 0 && (
+        <Card className="mb-4 gap-3 p-4" data-bulk>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="mr-auto text-base font-semibold">{queue.length} files · {t.site} <span className="ml-1 text-sm font-normal text-muted-foreground">{queue.filter((x) => x.state === "loaded").length} of {queue.length} loaded</span></h2>
+            {phase === "queued" && <><Button variant="outline" onClick={reset}>Cancel</Button><Button onClick={runBulk}>Load {queue.length} days into {t.site}</Button></>}
+            {phase === "bulk" && <Button variant="outline" onClick={() => { stopBulk.current = true; }}>Stop after this day</Button>}
+            {phase === "bulkdone" && <Button onClick={reset}>Upload more</Button>}
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.round((queue.filter((x) => ["loaded", "blocked", "failed", "skipped"].includes(x.state)).length / queue.length) * 100)}%` }} /></div>
+          <p className="text-sm text-muted-foreground">{phase === "queued" ? "Days are loaded oldest first, each one after the one before it. A day with an error stops the run and the later days are not loaded. New construction items load with category \"-\"; set it later." : phase === "bulk" ? "Keep this page open until every day is loaded." : "Done. Each loaded day can be undone below."}</p>
+          <ul className="divide-y rounded-lg border text-sm" aria-live="polite">
+            {queue.map((x) => (
+              <li key={x.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                <span className="w-24 shrink-0 font-medium">{fmtDate(x.date)}</span>
+                <span className="min-w-0 flex-1 truncate text-muted-foreground" title={x.file.name}>{x.file.name}</span>
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${x.state === "loaded" ? "border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success)]" : x.state === "failed" || x.state === "blocked" ? "border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger)]" : x.state === "wait" || x.state === "skipped" ? "text-muted-foreground" : "border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info)]"}`}>
+                  {(x.state === "reading" || x.state === "loading") && <Loader2 className="size-3 animate-spin" aria-hidden />}{x.state === "loaded" && <CheckCircle2 className="size-3" aria-hidden />}{Q_LABEL[x.state]}</span>
+                {x.state === "loaded" && x.batch && <Button size="sm" variant="ghost" onClick={() => { doUndo(x.batch!).then((ok) => { if (ok) setQueue((q) => q.map((y) => (y.key === x.key ? { ...y, state: "skipped", batch: undefined, msg: "Undone" } : y))); }); }}><Undo2 />Undo</Button>}
+                {(x.msg || x.warn || x.newCons) ? <span className="basis-full text-xs text-muted-foreground">{[x.msg, x.rows ? `${x.rows.toLocaleString("en-US")} rows` : "", x.warn ? `${x.warn} warning${x.warn > 1 ? "s" : ""}` : "", x.newCons ? `${x.newCons} new construction item${x.newCons > 1 ? "s" : ""} with no category` : ""].filter(Boolean).join(" · ")}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       {parsed && (
@@ -249,6 +359,25 @@ function View({ access }: { access: Access }) {
 
           {gap > 1 && <Card className="flex gap-3 border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />The last day loaded is {fmtDate(last!)}. This report is {gap} days later, so {gap - 1} day{gap > 2 ? "s are" : " is"} missing in between. Running totals start from the last day loaded.</Card>}
           {last && parsed.report_date <= last && <Card className="flex gap-3 border-[var(--info-border)] bg-[var(--info-bg)] p-3 text-sm"><RotateCcw className="mt-0.5 size-4 shrink-0 text-[var(--info)]" />{fmtDate(parsed.report_date)} is already loaded. Loading again replaces that day only; the days after it are not recalculated.</Card>}
+
+          {!!parsed.cons_new?.length && (
+            <Card className="gap-3 border-[var(--warning-border)] bg-[var(--warning-bg)] p-4">
+              <h2 className="text-base font-semibold">New construction items need a category <span className="ml-1 text-sm font-normal text-muted-foreground">{parsed.cons_new.filter((i) => !consPick[i]).length} of {parsed.cons_new.length} still open</span></h2>
+              <p className="text-sm text-muted-foreground">These items are not in the history yet. Choose the category each belongs to. Left open, an item loads with &quot;-&quot; and the category can be set in the master later.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {parsed.cons_new.map((item) => (
+                  <label key={item} className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 text-sm">
+                    <span className="min-w-0 truncate font-medium" title={item}>{item}</span>
+                    <select value={consPick[item] ?? ""} onChange={(e) => pickCons(item, e.target.value)} disabled={phase !== "parsed"} aria-label={`Category of ${item}`}
+                      className="h-8 rounded-md border bg-background px-2 text-sm">
+                      <option value="">Decide later (-)</option>
+                      {(parsed.cons_choices ?? []).map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </Card>
+          )}
 
           <Card className="gap-3 p-4">
             <div className="flex flex-wrap items-center gap-2">

@@ -62,4 +62,25 @@ assert.equal(sent.find((x) => x[0] === "etl_stage")[1].p_plan.length, 1);
 assert.deepEqual(Object.keys(sent.find((x) => x[0] === "etl_stage_raw")[1].p_raw), ["tblRAWMNG", "tblCALENDAR"]);
 sent.length = 0; await C.load(sc, "B1", { replacePlan: true }); assert.equal(sent[0][1].p_replace_plan, true);
 sent.length = 0; await C.load(sc, "B1"); assert.equal(sent[0][1].p_replace_plan, false);
+
+// compare week (4.5): the three calls, the error text, and how verdicts read
+const cs = [];
+const cc = (res) => ({ rpc: (fn, args) => { cs.push([fn, args]); return Promise.resolve(res); } });
+assert.equal(C.NEED_CLEAN_DAYS, 10);
+await C.compareRecord(cc({ data: { verdict: "clean" }, error: null }), "B1");
+assert.deepEqual(cs.pop(), ["etl_compare_record", { p_batch: "B1" }]);
+const status = await C.compareStatus(cc({ data: { streak: 3 }, error: null }));
+assert.deepEqual(cs.pop(), ["etl_compare_status", { p_need: 10 }]); assert.equal(status.streak, 3);
+await C.compareStatus(cc({ data: {}, error: null }), 5); assert.equal(cs.pop()[1].p_need, 5);
+await C.compareExplain(cc({ data: {}, error: null }), "B1", true, "desktop loads this day tomorrow");
+assert.deepEqual(cs.pop(), ["etl_compare_explain", { p_batch: "B1", p_explained: true, p_note: "desktop loads this day tomorrow" }]);
+await C.compareExplain(cc({ data: {}, error: null }), "B1", false);
+assert.deepEqual(cs.pop()[1], { p_batch: "B1", p_explained: false, p_note: null });
+await assert.rejects(C.compareExplain(cc({ data: null, error: { message: "ETL: only a site admin can explain differences" } }), "B1", true, "x"), (e) => e.message === "only a site admin can explain differences");
+await assert.rejects(C.compareRecord(cc({ data: null, error: { message: "ETL: a live load has nothing to compare with, it is the data" } }), "B1"), /live load/);
+assert.equal(C.compareMissing(new Error("Could not find the function public.etl_compare_status(p_need) in the schema cache")), true);
+assert.equal(C.compareMissing(new Error("ETL: not allowed")), false);
+assert.deepEqual(["clean", "explained", "only_here", "different", "unchecked", "unknown"].map((v) => C.verdictOf(v).pass), [true, true, false, false, false, false],
+  "only clean and explained days count towards going live");
+assert.equal(C.verdictOf("nonsense").label, "Nothing to compare", "an unknown verdict never reads as passed");
 console.log("etl_client: ok");

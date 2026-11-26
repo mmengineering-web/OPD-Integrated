@@ -1,10 +1,10 @@
 "use client";
 import { useMemo } from "react";
-import { AlertTriangle, ArrowUpRight, Building2, CalendarDays, MapPin, Pickaxe, Factory, Layers } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Building2, CalendarDays, MapPin, Pickaxe, Factory, Layers, Users, FileText, Calculator } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/opd/breadcrumb";
 import { PROJECTS } from "@/lib/opd/config.js";
-import { buildPortalModel, unreachableProjects, ROLE_LABEL } from "@/lib/opd/auth-core.js";
+import { buildPortalModel, unreachableProjects, canOpen, ROLE_LABEL } from "@/lib/opd/auth-core.js";
 import { AppFrame, type Access } from "@/components/opd/app-frame";
 
 type Mod = { projectId: string; usable: boolean; state: string; role: string | null } | null;
@@ -52,6 +52,13 @@ function Home({ access }: { access: Access }) {
   const model = useMemo(() => buildPortalModel(PROJECTS, access), [access]);
   const down = unreachableProjects(access).map((id: string) => PROJECTS.find(p => p.id === id)?.name ?? id);
   const total = model.sites.length;
+  const goto = [
+    { icon: Factory, label: "Production", desc: "Dashboard and daily report upload", href: "/production/" },
+    { icon: Pickaxe, label: "Exploration", desc: "Field data entry, QC, maps", href: "/exploration/" },
+    { icon: FileText, label: "Documents", desc: "Reports, SOPs, templates", href: "/documents/" },
+    { icon: Calculator, label: "Tools", desc: "Calculators and HPM nickel", href: "/tools/" },
+    ...(canOpen(PROJECTS, access, "super_admin") ? [{ icon: Users, label: "Users", desc: "Add people, set roles and sites", href: "/portal/admin/" }] : []),
+  ];
   const open = model.sites.filter((s: any) => s.any).length;
   const nExplo = model.sites.filter((s: any) => s.exploration?.usable).length;
   const nProd = model.sites.filter((s: any) => s.production?.usable).length;
@@ -68,7 +75,7 @@ function Home({ access }: { access: Access }) {
             <div className="min-w-0 max-w-[28rem] flex-1">
               <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-0.5 text-xs font-medium text-muted-foreground"><span className="size-1.5 rounded-full bg-primary" />{open === total ? "All sites open" : `${total - open} sites not open to you`}</span>
               <h2 className="mt-3 font-serif text-2xl font-medium leading-snug">{open ? `You can open ${open} of ${total} sites.` : "No site is open to you yet."}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Exploration field entry works at {nExplo} {nExplo === 1 ? "site" : "sites"}. Production upload arrives in a later release.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Exploration field entry works at {nExplo} {nExplo === 1 ? "site" : "sites"}. Production upload is open for the sites you have access to.</p>
               <a href="/explo/" className="nudge mt-4 inline-flex h-9 items-center gap-1.5 rounded-md bg-foreground px-3.5 text-sm font-medium text-background">Open field data entry <ArrowUpRight className="size-4" /></a>
             </div>
             <Ring value={open} total={total} />
@@ -82,7 +89,7 @@ function Home({ access }: { access: Access }) {
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat icon={MapPin} value={open} label="Sites open" hint={`out of ${total}`} />
           <Stat icon={Pickaxe} value={nExplo} label="Exploration" hint="sites you can enter data for" />
-          <Stat icon={Factory} value={nProd} label="Production" hint="sites live (upload soon)" />
+          <Stat icon={Factory} value={nProd} label="Production" hint="sites you can upload for" />
           <Stat icon={Layers} value={(model.ho.production?.usable || model.ho.exploration?.usable) ? "Yes" : "No"} label="Head office" hint="all-sites view" />
         </div>
         {down.length > 0 && (
@@ -91,6 +98,15 @@ function Home({ access }: { access: Access }) {
             <span>Could not reach: {down.join(", ")}. Other modules still work. Sign in again later to refresh.</span>
           </div>
         )}
+        <h2 className="mb-3 text-base font-semibold">Go to</h2>
+        <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" data-goto>
+          {goto.map(g => (
+            <a key={g.href} href={g.href} className="lift nudge group flex items-start gap-3 rounded-xl border bg-card p-4 hover:bg-accent/60" data-goto-link={g.label}>
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-brand"><g.icon className="size-4" /></span>
+              <span className="min-w-0"><span className="flex items-center gap-1 text-sm font-semibold">{g.label}<ArrowUpRight className="size-3.5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-xs text-muted-foreground">{g.desc}</span></span>
+            </a>
+          ))}
+        </div>
         <h1 className="mb-3 text-base font-semibold">Head office</h1>
         <Card className="mb-6 grid gap-2 p-3 sm:grid-cols-2" data-tile="HO">
           <ModuleLink icon={Building2} label="Production (all sites)" mod={model.ho.production} href={null} />
@@ -106,7 +122,7 @@ function Home({ access }: { access: Access }) {
             </Card>
           ))}
         </div>
-        <p className="mt-6 text-xs text-muted-foreground">Production upload arrives in a later release; those tiles stay greyed until then.</p>
+        <p className="mt-6 text-xs text-muted-foreground">Production upload is open at WKM and BM. Other site tiles stay greyed until their project is connected.</p>
     </>
   );
 }

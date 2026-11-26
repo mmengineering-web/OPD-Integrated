@@ -32,6 +32,7 @@ export function createClient(url, key, opts) {
     schema: sc => ({ from: t => chain(sc === 'dash' ? 'dash_' + t : t),
       rpc: async fn => ({ data: fn === 'me' ? (window.__hubNoMember ? [] : [{ email: 'geo@x', role: 'viewer', sites: null }]) : null, error: null }) }),
     rpc: async (fn, a) => {
+      if (window.__rpc && window.__rpc[fn]) { (window.__rpcLog = window.__rpcLog || []).push([fn, a]); return window.__rpc[fn](a); }   // page tests install their own database functions
       if (fn === 'exp_admin_upsert_profile' && window.__fnDb && window.__fnDb[sk]) { (window.__fnLog = window.__fnLog || []).push([sk, 'rpc', a]); const r = window.__fnDb[sk].find(x => x.email === a.p_email); if (r) { r.role = a.p_role; r.full_name = a.p_name; } }
       return { data: null, error: null };
     },

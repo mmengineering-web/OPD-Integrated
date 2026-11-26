@@ -1,6 +1,6 @@
 # Phase 4 design: Daily Report upload without Excel
 
-Owner: Gera. Written: 24 Nov 2026. Status: **steps 4.1 to 4.4 built (test mode). 4.5 compare week and go-live: not started.** Sections 2 to 7 are the original proposal; the step-status sections at the end are current.
+Owner: Gera. Written: 24 Nov 2026. Status: **steps 4.1 to 4.5 built (test mode). The compare week and the go-live are tooled (25 Nov 2026) but not yet run on real days; the owner runs them per site.** Sections 2 to 7 are the original proposal; the step-status sections at the end are current.
 Builds on `supabase/sql/etl_01_core.sql` (step 4.1) and the CAN Daily Report ETL v1.13.1. Current operating guide: `docs/OPD_UPLOAD_MODULE.md`.
 
 ## 1. Goal
@@ -147,3 +147,11 @@ TMS now reads four file types: DPR, Realisasi Barging, stock dome register and h
 
 ## Step 4.4g status (25 Nov 2026): stock register like the barge list
 The TMS stock upload now compares the register with the database before loading. Per contractor and date: insert (new), update (differs, columns listed old -> new) or same (skipped). The last stock date in the database is shown per contractor; the page reads TMS stock history through the newest day (`readHistory(..., { stockAll: true })`) so a re-upload of the same day is recognised. Whole-day replacement is kept, so rows of other contractors of that day are copied unchanged. No rows are deleted for being absent from the file (a register is one day, not a list). Reader version 4.4-6. No SQL change.
+
+## Step 4.5 status (25 Nov 2026): compare week and go-live tooling
+Built so the compare week can be run and judged on the server, not by eye. Runbook: `docs/GO_LIVE_RUNBOOK.md`.
+- `supabase/sql/etl_06_compare.sql`: `etl_compare_log` (one row per test-mode load), `etl_compare_record` (recomputes the comparison from `etl_shadow_diff` and `etl_barge_diff` on the server; repeatable, because the desktop often loads a day after the portal), `etl_compare_explain` (site admin; only "only here" rows can be explained, never different or only-there rows), `etl_compare_status` (daily table, clean days in a row, ready at 10). A day is clean at 0 different, 0 only there and every only-here row explained. A load replaced by a later load of the same file, or by one covering all its partitions, and an undone load, drop out; a load never compared shows as "unchecked" and breaks the run.
+- Owner tools, no grant to any portal role: `etl_golive_backup` (this site's rows of the three prod tables into schema `etl_prelive`), `etl_golive_check` (six lines; the desktop-step line is for a person), `etl_go_live('DESKTOP STEP IS OFF')` (refuses unless the checks pass; logged in `etl_golive_log`), `etl_go_back`, `etl_golive_restore(taken_at, 'RESTORE <site>')` (test mode only, row counts verified, once per backup).
+- Page: a Compare week card at the top of Uploads (progress out of 10, daily table, per-file detail, Check again, Show rows, reason for site admins). The page calls `etl_compare_record` right after every test-mode load.
+- Nothing in this step alters, indexes or adds a trigger or policy to any `prod_v2` table. Tests: `tests/etl_compare_test.sql` (C1-C19, G1-G14, Postgres 16), `tests/etl_client.test.mjs`, `tests/compare_e2e.mjs`.
+- Open: choose the compare start day; run the week on TMS, then BM, then WKM; the first live day per site checked in Looker.

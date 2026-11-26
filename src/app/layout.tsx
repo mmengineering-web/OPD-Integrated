@@ -18,12 +18,6 @@ const geistMono = localFont({
   display: "swap",
 });
 
-const serif = localFont({
-  src: "../fonts/newsreader-latin-wght-normal.woff2",
-  weight: "200 800",
-  variable: "--font-serif-src",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "One Portal Data",
@@ -38,7 +32,7 @@ const PRE = `try{var d=document.documentElement,t=localStorage.getItem('exp_them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${geist.variable} ${geistMono.variable} ${serif.variable}`} suppressHydrationWarning>
+    <html lang="id" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: PRE + WIPE_PRE }} /></head>
       <body>{children}<MotionLayer /></body>
     </html>

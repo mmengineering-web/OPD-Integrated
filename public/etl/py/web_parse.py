@@ -288,6 +288,18 @@ def parse(kind, pdf_path, cfg_json, schema_json, history_json, name=""):
     for r in actual:      # a hazard finding whose HAZARD CATEGORY is not in the report (site fills it by hand later): the fact table needs a group, "-" is the master's own blank
         if r["category"] == "HAZARD" and not r.get("metric_group"):
             r["metric_group"] = "-"
+    blank = [r["metric"] for r in actual if r["category"] == "CONS" and not r.get("metric_group")]
+    for r in actual:      # a construction item that is not in the history yet has no CONSTRUCTION CATEGORY: the fact table needs a group, "-" is the master's own blank (set the category in the master later)
+        if r["category"] == "CONS" and not r.get("metric_group"):
+            r["metric_group"] = "-"
+    choices = sorted({str(x.get("CONSCATEGORY")).strip() for x in history.get("tblRAWCONS", []) if x.get("CONSCATEGORY")}
+                     | {str(x.get("CONSTRUCTION CATEGORY")).strip() for x in history.get("tblCONSCATEGORY", []) if x.get("CONSTRUCTION CATEGORY")}
+                     | {r["metric_group"] for r in actual if r["category"] == "CONS" and r["metric_group"] != "-"})
+    cons_choices = choices or ["Bridge", "Building", "Infrastructure", "Jetty", "Road", "Other"]
+    cons_new = list(dict.fromkeys(blank))
+    if blank:
+        res["log"].append({"severity": "WARN", "date": d.isoformat(), "table": "tblRAWCONS", "check": "cons-category-blank",
+                           "message": f"{len(blank)} new construction item(s) have no category yet and are loaded with '-': " + ", ".join(blank[:6])})
     only = {tn for tn, rows in res["rows"].items() if rows and tn != "tblRAWBARGE"}
     if kind == "tms" and only <= {"tblRAWSTOCK", "tblRAWHAZARD"}:     # a stock-only or hazard-only file: do not re-stage the other categories of that day from the history
         actual = [r for r in actual if r["category"] in {"STOCK" if t == "tblRAWSTOCK" else "HAZARD" for t in only}]
@@ -304,7 +316,7 @@ def parse(kind, pdf_path, cfg_json, schema_json, history_json, name=""):
                                       + ", ".join(str(u.get("ID")) for u in res["hazard_updates"][:8])})
     counts = Counter(r["category"] for r in actual)
     return json.dumps({
-        "report_date": d.isoformat(), "site": site, "actual": actual, "raw": raw,
+        "report_date": d.isoformat(), "site": site, "actual": actual, "raw": raw, "cons_new": cons_new, "cons_choices": cons_choices,
         "barge": barge, "stock": stock, "plan": plan, "ship_updates": _ship_list(res), "log": res["log"], "summary": {"rows": len(actual), "by_category": dict(counts), "raw_rows": {k: len(v) for k, v in raw.items()},
                                        "build_notes": rep.get("notes", [])},
     }, default=_json_default)

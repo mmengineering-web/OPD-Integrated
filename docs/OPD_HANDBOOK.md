@@ -1,6 +1,6 @@
 # OPD Handbook: everything built so far, and what to do when a new site arrives
 
-Owner: Gera. Version 4.4.0. Last updated: 24 Nov 2026. UI rules: `docs/UX_RULES.md`.
+Owner: Gera. Version 4.5.0. Last updated: 25 Nov 2026. UI rules: `docs/UX_RULES.md`.
 Live app: https://technicalproductionportal.vercel.app (final address, decided 24 Nov 2026; `opd-integrated.vercel.app` is the former test address, do not give it to crews). Repo: `mmengineering-web/OPD-Integrated`.
 
 > **No secrets in this file or in the repo.** Only Supabase publishable (anon) keys are in the code. A service-role key exists only as an auto-injected secret inside each Edge Function. Passwords are never stored.
@@ -211,6 +211,8 @@ Replace TMS with a site you already added to see every file that lists sites, th
 | Remove a person | Delete everywhere. You cannot delete yourself or the last super admin. |
 | Someone says "no access" | Check the matrix row. Check `is_active`. Ask them to sign out and in. Check the password is the same in every project. |
 | Update the Edge Function | See 8.1. |
+| Read the compare week | Production > Uploads > Compare week. Open a day, press Check again after the desktop has loaded it. Clean days in a row out of 10 is the go-live gate. See `docs/GO_LIVE_RUNBOOK.md`. |
+| Go live or roll back a site | Owner only, in that site's SQL editor: `etl_golive_backup`, `etl_golive_check`, `etl_go_live`, `etl_go_back`, `etl_golive_restore`. Steps and order in `docs/GO_LIVE_RUNBOOK.md`. |
 
 ### 8.1 Updating an Edge Function in the Supabase editor
 
@@ -270,6 +272,7 @@ python3 -m http.server 8801 -d out-test &
 node tests/opd_e2e.mjs       # 108 checks
 node tests/admin_e2e.mjs     # 40 checks
 node tests/ux_e2e.mjs        # labels, page search, input masks, phone (port 4175)
+node tests/compare_e2e.mjs   # Compare week card on Uploads (port 4174)
 CHROME=/usr/bin/google-chrome python3 tests/e2e.py   # plus e2e_data, e2e_dash, e2e_forms, e2e_3d, e2e_sw
 ```
 
@@ -285,7 +288,7 @@ The stub (`tests/stub_supabase.mjs`) supports `functions.invoke`, `window.__fnDb
 2. Does the Explo Hub dashboard treat `data_entry` differently from `viewer`? Unknown. Check the hub policies and functions.
 3. Per-site picker for Explo Hub members (`sites` array): offered, not built.
 4. (Done) Column separators in `users-admin.tsx` are now computed from the groups.
-5. Production Uploads (Phase 4) are built and run in test mode. Open: compare week and go-live per site (`docs/OPD_UPLOAD_MODULE.md`), `etl_05_hazard.sql` on TMS.
+5. Production Uploads (Phase 4) are built and run in test mode. The compare week and go-live tools are built (step 4.5). Open: run `etl_06_compare.sql` and `etl_05_hazard.sql` (TMS) on the site projects, choose the compare start day, then follow `docs/GO_LIVE_RUNBOOK.md` per site (TMS, BM, WKM).
 6. Next tools: Drillhole Analysis, Hauling Cost, Revenue Projection.
 7. Dashboard Guideline PDF (12 MB) not yet added to Production Guidelines.
 8. Kepmen 363/2026 versus 144/2026: confirm which applies to the HPM calculator. Live HMA sheet check still open.
@@ -316,6 +319,7 @@ The stub (`tests/stub_supabase.mjs`) supports `functions.invoke`, `window.__fnDb
 | `docs/OPD_UPLOAD_MODULE.md` | Upload module guide (Phase 4) |
 | `docs/PHASE4_EXCEL_FREE_DESIGN.md` | Phase 4 design and step status |
 | `docs/CUTOVER.md` | Domain swap, rollback, retirement runbook |
+| `docs/GO_LIVE_RUNBOOK.md` | Compare week, go-live and rollback per production site (step 4.5) |
 | `docs/PHONE_TESTS.md` | Phone test checklist |
 | `supabase/sql/op_profile.sql` | Role table for production projects |
 | `supabase/functions/op-admin-users/index.ts` | Admin Edge Function |

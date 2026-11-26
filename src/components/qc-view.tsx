@@ -91,8 +91,8 @@ export function QcView({ info }: { info: Info }) {
         <Kpi label="CRM Ni Z (mean)" value={crmNi.length ? nf(crmNi.reduce((a: number, c: any) => a + c.z, 0) / crmNi.length, 2) : "-"} sub={`${crmNi.length} CRM results; |Z| ≤ ${T.crm_z_warn} is good`} />
         <Kpi label="Duplicates within limit" value={dupN.length ? nf((dupN.filter((x: any) => x.status === "pass").length / dupN.length) * 100, 0) + "%" : "-"} sub={`${dupN.length} pairs, Ni ARD`} />
       </div>
-      <div id="q-sub" className="inline-flex w-fit flex-wrap overflow-hidden rounded-md border">
-        {[["geo", "QC & Survey"], ["qaqc", "QAQC Geochemistry"], ["lab", "Lab Analysis"], ["thr", "Thresholds"]].map(([k, l]) => <button key={k} data-s={k} onClick={() => setSub(k)} className={cn("h-9 px-3 text-sm", k === sub ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>{l}</button>)}
+      <div id="q-sub" className="grid w-full grid-cols-2 overflow-hidden rounded-md border sm:inline-flex sm:w-fit sm:flex-wrap">
+        {[["geo", "QC & Survey"], ["qaqc", "QAQC Geochemistry"], ["lab", "Lab Analysis"], ["thr", "Thresholds"]].map(([k, l]) => <button key={k} data-s={k} onClick={() => setSub(k)} className={cn("h-10 border-b border-r px-3 text-center text-sm last:border-r-0 sm:h-9 sm:border-0", k === sub ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>{l}</button>)}
       </div>
       {sub === "geo" && <Geo R={R} />}
       {sub === "qaqc" && <Qaqc R={R} T={T} d={d} tk={tk} />}

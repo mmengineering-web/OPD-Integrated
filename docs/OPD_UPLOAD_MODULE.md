@@ -1,6 +1,6 @@
 # Upload module (Data inputs) - One Portal Data
 
-Status: 24 Nov 2026. WKM and BM read the Daily Report PDF; TMS reads four file types. All sites run in TEST MODE (shadow): nothing written by the module reaches `prod_v2` / Looker until the owner sets `etl_config.live = true`.
+Status: 25 Nov 2026 (step 4.5 added: compare week page and go-live tools). WKM and BM read the Daily Report PDF; TMS reads four file types. All sites run in TEST MODE (shadow): nothing written by the module reaches `prod_v2` / Looker until the owner sets `etl_config.live = true`.
 
 ## 1. What it does
 A Data entry, Site admin or Super admin user opens **Production > Uploads** (`/production/data-inputs/`), drops the site's daily file, reads the preview and issues, presses **Load**, and can **Undo**. The file is read in the browser; the original is not kept. Only the rows go to the site's own Supabase project. Own site only.
@@ -43,6 +43,7 @@ page (src/components/opd/upload-view.tsx) + src/lib/opd/etl-client.js
 | `etl_03_safe_target.sql` | shadow tables, `live` flag, `etl_shadow_diff`, backup for live undo |
 | `etl_04_barge.sql` | barge list (shadow `etl_shadow_barge`, live `<fact_schema>.fact_barge`), plan guard, `etl_stage_ship`, tolerant compare |
 | `etl_05_hazard.sql` | duplicate key includes the text (several findings per day); compare matches on the text. Needed on TMS |
+| `etl_06_compare.sql` | compare week: `etl_compare_log`, `etl_compare_record`, `etl_compare_explain`, `etl_compare_status`; owner tools `etl_golive_check`, `etl_golive_backup`, `etl_go_live`, `etl_go_back`, `etl_golive_restore` |
 
 Rules built in: nothing alters or adds triggers/policies to `prod_v2`; a load replaces only the (site, date, category, metric_group) partitions it contains; sections the reader marked ERROR are not loaded; `etl_*` functions are SECURITY DEFINER, tables have RLS and no direct access.
 
@@ -53,6 +54,7 @@ Rules built in: nothing alters or adds triggers/policies to `prod_v2`; a load re
 - **Plan card** (WKM, BM): the plan printed in the report differs from `tblCALENDAR`. A site admin can tick "Replace the plan when I load": the value holds from the report day to the end of the run of equal calendar values (a month plan stops at month end; ST-DAY = ST-WTD / 7). Earlier days never change.
 - **Ship of earlier days** (WKM, BM): SHIP of earlier days that differs from the barge list. After the report is loaded a site admin presses "Apply ticked rows": DAY is overwritten and WTD/MTD/YTD of that day and later days of the contractor move by the same difference. Own batch, own Undo.
 - **Compare** after Load: same / different / only here / only there against `prod_v2` for the same days (and the barge list).
+- **Compare week** (top of the page, test mode only): one row per report day with the result (Clean, Explained, Needs a reason, Different, Not checked), the counts, and the number of clean days in a row out of 10. Open a day to see each file, press **Check again** after the desktop has loaded the day, **Show rows** to list the differing rows, and (site admin) write the reason for rows that exist only here. Once a site is live the card says "Live".
 - **Recent uploads**: loaded (test mode) / loaded / undone.
 
 ## 6. TMS specifics
@@ -64,11 +66,11 @@ Rules built in: nothing alters or adds triggers/policies to `prod_v2`; a load re
 
 ## 7. Test mode, compare week, going live
 - Default is SHADOW: `public.etl_shadow_actual / plan / barge`. Looker is not affected.
-- Compare week: upload each day's files in the portal as well as running the desktop ETL; read the compare (target: 0 different, 0 only there, every "only here" explained).
-- Go live (owner only, SQL editor, per site): switch off the desktop's Supabase step for that site first (one writer), back up the three prod tables, then `update public.etl_config set live = true;`. Rollback: `live = false`, undo recent batches, restore the backup.
+- Compare week: upload each day's files in the portal as well as running the desktop ETL; read the Compare week card (target: 0 different, 0 only there, every "only here" explained, 10 clean days in a row). The comparison is computed by `etl_compare_record` on the server, so the browser cannot send its own numbers.
+- Go live (owner only, SQL editor, per site): switch off the desktop's Supabase step for that site first (one writer), then `select public.etl_golive_backup();`, `select * from public.etl_golive_check();`, `select public.etl_go_live('DESKTOP STEP IS OFF');`. The function refuses unless the checks pass and logs the switch. Rollback: `select public.etl_go_back();`, undo recent batches in the portal, and only as a last resort `etl_golive_restore`. Full steps: `docs/GO_LIVE_RUNBOOK.md`.
 
 ## 8. Tests
-`npm run test:unit` (client logic), `tests/etl_*_test.sql` (Postgres 16: core, history, safety S1-S7), `scripts/etl/test_barge.py`, `test_plan_ship.py`, `parity_check.py`, `validate_formulas.py`, and the reference harnesses `tests/integration_*.mjs.txt` (real worker + scratch Postgres). Checked against the real masters: WKM 1077/1077, BM 755/755 rows identical; TMS DPR 11 Oct and 9 Nov: 0 differences in input values, formulas 0 differences on all rows.
+`npm run test:unit` (client logic), `tests/etl_*_test.sql` (Postgres 16: core, history, safety S1-S7, compare and go-live C1-C19 and G1-G14), `tests/compare_e2e.mjs` (the Compare week card in a browser), `scripts/etl/test_barge.py`, `test_plan_ship.py`, `parity_check.py`, `validate_formulas.py`, and the reference harnesses `tests/integration_*.mjs.txt` (real worker + scratch Postgres). Checked against the real masters: WKM 1077/1077, BM 755/755 rows identical; TMS DPR 11 Oct and 9 Nov: 0 differences in input values, formulas 0 differences on all rows.
 
 ## 9. Known limits
 Preview is not editable. TMS hazard closures of earlier findings and TMS plan Replace are not built. The browser is not yet seen on a phone; first download is large. Two writers must not run on one site (see 7). Supabase billing status and Vercel Hobby terms are outside this module but affect it.
@@ -82,4 +84,7 @@ Preview is not editable. TMS hazard closures of earlier findings and TMS plan Re
 | "Cannot load: ... appears twice" | ERROR in the file; fix at site |
 | "duplicate key(s) in the actual rows" | run `etl_05_hazard.sql`; otherwise the file has two identical rows |
 | "N different" after a load of an old day | the master/desktop value differs; open the compare rows |
+| "Not installed on this site yet" in the Compare week card | run `etl_06_compare.sql` in that project, reload |
+| "only rows that exist only in the portal can be explained" | the day has different or only-there rows: fix and load the day again |
+| "ETL: not ready: ..." from `etl_go_live` | the message lists the failing checks; see `docs/GO_LIVE_RUNBOOK.md` section 4 |
 | Old reader after an update | the browser caches by `manifest.json` version; reload twice or clear site data |

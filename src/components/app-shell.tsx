@@ -175,15 +175,15 @@ function Main({ info, sites, onSwitch, onPortalLogout, onLogout }: { info: Info;
       <Shell active="explo" access={access} account={account} path="/explo/" sideExtra={sideExtra}
         mainClass="pb-[calc(var(--tabbar-h)+var(--safe-b)+1.5rem)] lg:pb-10"
         mobileBar={
-      <nav className="fixed inset-x-0 bottom-0 z-[20] flex h-[calc(var(--tabbar-h)+var(--safe-b))] items-stretch border-t bg-card pb-[var(--safe-b)] lg:hidden" aria-label="Tab">
+      <nav className="fixed inset-x-0 bottom-0 z-[20] flex w-full max-w-full h-[calc(var(--tabbar-h)+var(--safe-b))] items-stretch border-t bg-card pb-[var(--safe-b)] lg:hidden" aria-label="Tab">
         {tabs.slice(0, 4).map(t => (
           <button key={t.key} onClick={() => go(t.key)} aria-current={t.key === tab ? "page" : undefined} aria-label={t.label}
-            className={cn("flex flex-1 flex-col items-center justify-center gap-1 text-[.6875rem] font-medium text-muted-foreground", t.key === tab && "text-foreground")}>
+            className={cn("flex min-w-0 flex-1 flex-col items-center justify-center gap-1 overflow-hidden text-[.6875rem] font-medium text-muted-foreground", t.key === tab && "text-foreground")}>
             <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", t.key === tab && "bg-[color-mix(in_srgb,var(--primary)_16%,var(--card))] text-brand")}><Ico name={t.icon} className="size-5" /></span>
             {t.label.split(" ")[0]}
           </button>
         ))}
-        <button onClick={() => setPal(true)} className="flex flex-1 flex-col items-center justify-center gap-1 text-[.6875rem] font-medium text-muted-foreground" aria-label="Lainnya">
+        <button onClick={() => setPal(true)} className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 overflow-hidden text-[.6875rem] font-medium text-muted-foreground" aria-label="Lainnya">
           <span className="grid h-7 w-12 place-items-center rounded-full"><Ellipsis className="size-5" /></span>Lainnya
         </button>
       </nav>

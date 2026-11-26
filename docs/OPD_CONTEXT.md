@@ -1,6 +1,6 @@
 # One Portal Data (OPD): concept, context and memory
 
-Last updated: 24 Nov 2026 (version 4.4.0). Owner: Gera. Portfolio project (non-commercial), but it must be fully functional.
+Last updated: 25 Nov 2026 (version 4.5.0). Owner: Gera. Portfolio project (non-commercial), but it must be fully functional.
 Keys are NOT stored in this file. Publishable (anon) keys live in `src/lib/opd/config.js` and `src/lib/core/config.js`. Never commit a service-role key or a password.
 
 ## 1. What OPD is

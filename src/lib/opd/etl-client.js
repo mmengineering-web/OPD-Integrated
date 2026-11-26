@@ -172,3 +172,92 @@ export async function recentBatches(client, limit = 8) {
   if (error) throw new Error(error.message);
   return data || [];
 }
+
+// ---- Compare week (step 4.5) ---------------------------------------------------------------------------------------------------
+// The portal writes to a safe copy while the desktop ETL keeps feeding prod_v2. For about two weeks both run on the same files, and each
+// day is compared. Everything is computed on the server (etl_compare_*); the browser only asks and shows.
+
+/** Clean days in a row needed before a site may go live (supabase/sql/etl_06_compare.sql uses the same default). */
+export const NEED_CLEAN_DAYS = 10;
+
+/** How a compared day reads on the page. pass = counts towards the clean days in a row. */
+export const VERDICTS = {
+  clean:     { label: "Clean",         pass: true,  tone: "success", help: "Every row matches the current process." },
+  explained: { label: "Explained",     pass: true,  tone: "info",    help: "Rows only in the portal, and a site admin wrote why." },
+  only_here: { label: "Needs a reason", pass: false, tone: "warning", help: "Rows exist only in the portal. A site admin must write why, or load again after the current process has the day." },
+  different: { label: "Different",     pass: false, tone: "danger",  help: "A value differs, or rows exist only in the current process. Fix the cause and load the day again." },
+  unchecked: { label: "Not checked",   pass: false, tone: "warning", help: "Loaded, but not compared yet. Press Check again." },
+  unknown:   { label: "Nothing to compare", pass: false, tone: "warning", help: "No rows were compared, or the barge list could not be read." },
+};
+export const verdictOf = (v) => VERDICTS[v] || VERDICTS.unknown;
+
+/** Compare a loaded test-mode batch with prod_v2 and store the result. Safe to repeat: use it again once the desktop has loaded the same day. */
+export async function compareRecord(client, batch) {
+  const { data, error } = await client.rpc("etl_compare_record", { p_batch: batch });
+  if (error) throw new Error(error.message.replace(/^ETL: /, ""));
+  return data;
+}
+
+/** The daily table, the clean days in a row and whether the site is ready. */
+export async function compareStatus(client, need = NEED_CLEAN_DAYS) {
+  const { data, error } = await client.rpc("etl_compare_status", { p_need: need });
+  if (error) throw new Error(error.message.replace(/^ETL: /, ""));
+  return data;
+}
+
+/**
+ * Site admin only: write (or remove) the reason why rows exist only in the portal.
+ * @param {string | null} [note] at least 10 characters when explained is true
+ */
+export async function compareExplain(client, batch, explained, note = null) {
+  const { data, error } = await client.rpc("etl_compare_explain", { p_batch: batch, p_explained: explained, p_note: note });
+  if (error) throw new Error(error.message.replace(/^ETL: /, ""));
+  return data;
+}
+
+/** True when the error means etl_06_compare.sql has not been run in this project yet. */
+export const compareMissing = (e) => /etl_compare_status|Could not find the function|does not exist|schema cache/i.test(String(e?.message ?? e));
+
+// ---- Daily Report download (Phase 4.6) ----
+/** Site production projects the person can read (any role, a usable login), one per site that has a reader. */
+export function reportTargets(projects, access, projectAccess) {
+  return projects
+    .filter((p) => p.module === "production" && p.scope === "site" && KIND_OF_SITE[p.site])
+    .filter((p) => projectAccess(access, p.id).usable)
+    .map((p) => ({ project: p, site: p.site }));
+}
+
+/** Newest loaded day of one site (etl_report_data, read only). */
+export async function reportData(client, date = null) {
+  const { data, error } = await client.rpc("etl_report_data", { p_date: date });
+  if (error) throw new Error(`etl_report_data: ${error.message}`);
+  return data;
+}
+
+/** All reachable sites in parallel. A site that fails does not stop the others. Returns {sites: {WKM: raw}, failed: {BM: message}}. */
+export async function reportAll(targets, makeClient, date = null) {
+  const sites = {}, failed = {};
+  await Promise.all(targets.map(async (t) => {
+    try { sites[t.site] = await reportData(makeClient(t.project), date); }
+    catch (e) { failed[t.site] = /Could not find the function|does not exist|schema cache/i.test(String(e?.message)) ? "report reader not installed on this project" : String(e?.message ?? e); }
+  }));
+  return { sites, failed };
+}
+
+// ---- Interactive dashboard (Phase 4.7) ----
+/** One site, one date range (etl_dash_data, read only, at most 400 days). */
+export async function dashData(client, from, to) {
+  const { data, error } = await client.rpc("etl_dash_data", { p_from: from, p_to: to });
+  if (error) throw new Error(`etl_dash_data: ${error.message}`);
+  return data;
+}
+
+/** The chosen sites in parallel. A site that fails does not stop the others. Returns {sites: {WKM: raw}, failed: {BM: message}}. */
+export async function dashAll(targets, makeClient, from, to) {
+  const sites = {}, failed = {};
+  await Promise.all(targets.map(async (t) => {
+    try { sites[t.site] = await dashData(makeClient(t.project), from, to); }
+    catch (e) { failed[t.site] = /Could not find the function|does not exist|schema cache/i.test(String(e?.message)) ? "dashboard reader not installed on this project (run etl_08_dashboard.sql)" : String(e?.message ?? e); }
+  }));
+  return { sites, failed };
+}

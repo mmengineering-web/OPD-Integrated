@@ -175,7 +175,7 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-serif: var(--font-serif-src), Georgia, "Times New Roman", serif;
+  --font-serif: var(--font-geist), ui-sans-serif, system-ui, sans-serif; /* no serif face: headings use Geist */
 }
 
 @layer base {
@@ -425,3 +425,9 @@ html.js-motion [data-reveal].is-in { animation: m-up .7s var(--ease-out) backwar
 /* The new page starts under the panel, then the panel lifts off. */
 html[data-wipe="in"] #wipe { transform: translateY(0); transition: none; }
 @media (prefers-reduced-motion: reduce) { #wipe { display: none; } html.js-motion [data-reveal] { opacity: 1 !important; transform: none !important; animation: none !important; } }
+
+/* A wide table or line in one card must never widen the page: on phones that stretches the fixed bottom bar past the screen. */
+html, body { overflow-x: clip; max-width: 100%; }
+
+/* Headings and big numbers: one family (Geist), tight tracking, aligned digits. */
+.font-serif{letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
