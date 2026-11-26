@@ -551,3 +551,7 @@ button,[role="tab"],[role="button"]{-webkit-user-select:none;user-select:none}
 @starting-style{.pop{opacity:0;transform:scale(.97) translateY(-4px)}}
 @media (max-width:639px){.pop{transform-origin:top center}}
 @media (prefers-reduced-motion:reduce){@starting-style{.pop{transform:none}}.pop{transition:opacity 120ms linear}}
+
+/* rows that draw their own bar (ScrollStrip, top menu) must not also show the browser one; beats the thin-bar rule above */
+.strip-scroll,.\[scrollbar-width\:none\]{scrollbar-width:none}
+.strip-scroll::-webkit-scrollbar,.\[scrollbar-width\:none\]::-webkit-scrollbar{display:none;width:0;height:0}

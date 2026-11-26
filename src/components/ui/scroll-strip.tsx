@@ -69,7 +69,10 @@ export function ScrollStrip({ className, children, ...aria }: React.HTMLAttribut
 
   return (
     <div className={cn("strip-wrap relative", className)}>
-      <div ref={box} className="flex items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" {...aria}>{children}</div>
+      {/* belt and braces: even if a browser ignores the CSS that hides its own bar, the bar sits in padding that the clip below cuts off */}
+      <div className="overflow-hidden">
+        <div ref={box} className="strip-scroll -mb-6 flex items-center gap-1 overflow-x-auto overscroll-x-contain pb-6" {...aria}>{children}</div>
+      </div>
       <span aria-hidden className={cn("pointer-events-none absolute inset-y-0 left-0 w-10 rounded-l-xl bg-gradient-to-r from-[var(--card)] to-transparent transition-opacity duration-200", edge.start || !edge.can ? "opacity-0" : "opacity-100")} />
       <span aria-hidden className={cn("pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-xl bg-gradient-to-l from-[var(--card)] to-transparent transition-opacity duration-200", edge.end || !edge.can ? "opacity-0" : "opacity-100")} />
       <button type="button" tabIndex={-1} aria-label="Scroll left" onClick={() => by(-1)}
