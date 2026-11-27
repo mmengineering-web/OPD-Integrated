@@ -1,0 +1,11 @@
+{"source":"Daily Report Production, Friday 20 Nov 2026 (HO Excel master)",
+ "cutoff":{"WKM":"2026-11-19","BM":"2026-11-18","TMS":"2026-11-09"},
+ "production":{
+  "WKM":{"LGO":{"day":4140.75,"week":27462.05,"month":107674.98,"year":1471643.05},"HGO":{"day":10383.54,"week":54572.42,"month":183568.54,"year":2857682.03},"sub":{"day":14524.29,"week":82034.47,"month":291243.52,"year":4329325.08}},
+  "BM":{"LGO":{"day":0,"week":0,"month":0,"year":92533.00},"HGO":{"day":0,"week":0,"month":16644.55,"year":403955.16},"sub":{"day":0,"week":0,"month":16644.55,"year":496488.16}},
+  "TMS":{"LGO":{"day":8279.04,"week":8279.04,"month":71813.84,"year":581044.13},"HGO":{"day":0,"week":0,"month":0,"year":0},"sub":{"day":8279.04,"week":8279.04,"month":71813.84,"year":581044.13}}},
+ "shipment":{"WKM":{"day":9573.32,"week":49693.54,"month":214358.52,"year":3001332.89},"BM":{"day":0,"week":0,"month":0,"year":438175.35},"TMS":{"day":11270.08,"week":11270.08,"month":47444.80,"year":293757.02}},
+ "fuel":{"WKM":{"day":50006,"week":286038,"month":912097,"stock":269749},"BM":{"day":395,"week":1334,"month":37374,"stock":34642},"TMS":{"day":5651,"week":5651,"month":97727,"stock":-1073263}},
+ "manpower_total":{"WKM":1347,"BM":249,"TMS":336},
+ "ewh_hours":{"WKM":{"16":13.22,"17":14.75,"18":12.48,"19":13.46},"BM":{"16":9,"17":9,"18":9}},
+ "excel_internal_inconsistency":{"BM_year_subtotal":496488.16,"BM_monthly_table_total":388681.13,"WKM_year_subtotal":4329325.08,"WKM_monthly_table_total":2857375.90,"note":"Year in the Excel summary and its own monthly table disagree; dashboard cannot match both."}}
